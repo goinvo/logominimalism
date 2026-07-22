@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Logo Evolution Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel-bg: #ffffff;
+    --ink: #1c1c1a;
+    --ink-muted: #6b6b67;
+    --ink-faint: #9a9a95;
+    --dot-grid: #dedcd6;
+    --chart-bg: #fbfbf9;
+    --axis: #8f8f8a;
+    --rug: #b7b7b1;
+    --card-bg: #ffffff;
+    --card-border: #e6e5e0;
+
+    --c-restaurants: #E8472A;
+    --c-retail: #2563EB;
+    --c-tech: #7C3AED;
+    --c-fashion: #0D9488;
+    --c-shipping: #D97706;
+    --c-food: #DC2626;
+    --c-auto: #475569;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+
+  #app {
+    min-width: 760px;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 24px 24px 32px;
+  }
+
+  #layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 22px;
+  }
+
+  #filters {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 200px;
+    flex: none;
+  }
+
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    color: var(--ink-muted);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+
+  .filter-btn .swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--dot-swatch, var(--ink-muted));
+    flex: none;
+  }
+
+  .filter-btn:hover {
+    border-color: #c9c9c2;
+    color: var(--ink);
+  }
+
+  .filter-btn.active {
+    background: color-mix(in srgb, var(--dot-swatch, #666) 12%, #ffffff);
+    border-color: var(--dot-swatch, #666);
+    color: var(--ink);
+  }
+
+  #chart-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    background-color: var(--chart-bg);
+    background-image: radial-gradient(circle, var(--dot-grid) 1px, transparent 1.5px);
+    background-size: 22px 22px;
+    border: 1px solid #ececE7;
+    border-radius: 10px;
+  }
+
+  svg#chart {
+    display: block;
+    width: 100%;
+    height: 860px;
+  }
+
+  .zero-line { stroke: #cfcfc8; stroke-width: 1; stroke-dasharray: 2 4; }
+  .axis-line { stroke: var(--axis); stroke-width: 1; opacity: 0.7; }
+  .tick-line { stroke: var(--axis); stroke-width: 1; opacity: 0.7; }
+  .tick-text { fill: var(--ink-muted); font-size: 12px; }
+  .axis-caption { fill: var(--ink-muted); font-size: 12.5px; font-weight: 500; }
+
+  circle.node-bg {
+    transition: r 300ms ease, fill 300ms ease, fill-opacity 300ms ease, stroke 300ms ease, stroke-width 300ms ease;
+    cursor: pointer;
+  }
+
+  circle.hit {
+    fill: transparent;
+    cursor: pointer;
+  }
+
+  image.node-logo {
+    cursor: pointer;
+    transition: opacity 220ms ease;
+  }
+
+  text.fallback-initials {
+    fill: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+  }
+
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    color: var(--ink);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 120ms ease;
+    z-index: 50;
+    max-width: 220px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  }
+
+  #tooltip.visible { opacity: 1; }
+  #tooltip .t-brand { font-weight: 700; }
+  #tooltip .t-sub { color: var(--ink-muted); margin-top: 2px; }
+
+  /* in-place popover */
+  .brand-popover {
+    position: absolute;
+    width: 320px;
+    max-height: min(680px, 88vh);
+    overflow-y: auto;
+    background: var(--panel-bg);
+    border: 1px solid #ececE7;
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(20,20,10,0.18);
+    padding: 20px 20px 22px;
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.85);
+    transition: transform 220ms cubic-bezier(.2,.8,.3,1), opacity 180ms ease;
+  }
+
+  .brand-popover.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+  }
+
+  #popover-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--ink-muted);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  #popover-close:hover { color: var(--ink); }
+
+  #popover-content h2 {
+    margin: 0 24px 2px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .panel-accent-bar {
+    height: 4px;
+    width: 40px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+    background: var(--accent, #888);
+  }
+
+  .panel-years {
+    color: var(--ink-muted);
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+
+  .badge.simplified { background: rgba(13,148,136,0.12); color: #0d7a6e; }
+  .badge.more_complex { background: rgba(217,119,6,0.14); color: #b3590a; }
+  .badge.no_significant_change { background: rgba(100,100,100,0.12); color: #5a5a56; }
+
+  .panel-section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+    margin: 20px 0 10px;
+  }
+
+  .timeline-wrap {
+    position: relative;
+  }
+
+  #timeline-strip {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding-bottom: 8px;
+    margin: 0 -4px;
+    scrollbar-width: none;
+  }
+
+  #timeline-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .strip-nav {
+    position: absolute;
+    top: 34px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    box-shadow: 0 2px 8px rgba(20,20,10,0.14);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--ink);
+    cursor: pointer;
+    z-index: 3;
+    transition: opacity 160ms ease;
+  }
+
+  .strip-nav.prev { left: -6px; }
+  .strip-nav.next { right: -6px; }
+  .strip-nav:hover { background: #f5f5f2; }
+
+  .edge-fade {
+    position: absolute;
+    top: 0;
+    width: 26px;
+    height: 84px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 160ms ease;
+    z-index: 2;
+  }
+
+  .edge-fade.left {
+    left: -4px;
+    background: linear-gradient(to right, var(--panel-bg) 30%, transparent);
+  }
+
+  .edge-fade.right {
+    right: -4px;
+    background: linear-gradient(to left, var(--panel-bg) 30%, transparent);
+  }
+
+  .logo-card {
+    flex: none;
+    width: 84px;
+    text-align: center;
+  }
+
+  .logo-frame {
+    width: 84px;
+    height: 84px;
+    background: #fff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #ececE7;
+  }
+
+  .logo-frame img {
+    max-width: 78%;
+    max-height: 78%;
+    object-fit: contain;
+  }
+
+  .logo-frame.placeholder {
+    background: #f2f2ee;
+    color: var(--ink-faint);
+    font-size: 11px;
+  }
+
+  .logo-year {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 6px;
+  }
+
+  #stat-pills {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .stat-pill {
+    background: #f7f7f4;
+    border: 1px solid #ececE7;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .stat-pill .stat-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+
+  .stat-pill .stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 2px;
+    color: var(--ink);
+  }
+
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="layout">
+    <nav id="filters"></nav>
+    <div id="chart-wrap">
+      <svg id="chart"></svg>
+    </div>
+  </div>
+</div>
+
+<div id="popover" class="brand-popover">
+  <button id="popover-close" aria-label="Close">&times;</button>
+  <div id="popover-content"></div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const INDUSTRIES = [
+  { key: "all",         label: "All" },
+  { key: "restaurants",  label: "Restaurants" },
+  { key: "retail",       label: "Retail" },
+  { key: "tech",         label: "Tech" },
+  { key: "fashion",      label: "Fashion" },
+  { key: "shipping",     label: "Shipping" },
+  { key: "food",         label: "Food & CPG" },
+  { key: "auto",         label: "Auto" },
+];
+
+const COLORS = {
+  restaurants: "#E8472A",
+  retail:      "#2563EB",
+  tech:        "#7C3AED",
+  fashion:     "#0D9488",
+  shipping:    "#D97706",
+  food:        "#DC2626",
+  auto:        "#475569",
+};
+
+const BADGE_LABEL = {
+  simplified: "Simplified",
+  more_complex: "More complex",
+  no_significant_change: "No significant change",
+};
+
+const CONTEXT_R = 4.5;
+const CONTEXT_R_DIM = 3.5;
+const FOCUS_R = 24; // 48px diameter
+
+let activeIndustry = "restaurants";
+let activeTimelineStrip = null;
+let nodes = [];
+let timelinesByBrand = new Map();
+let simulation;
+let width = 0, height = 860;
+const margin = { top: 50, right: 28, bottom: 70, left: 60 };
+
+const svg = d3.select("#chart");
+const gAxis = svg.append("g").attr("class", "axis-layer");
+const gDots = svg.append("g").attr("class", "dots-layer");
+
+let scoreScale;
+let centerX;
+
+function slug(s) {
+  return s.replace(/[^a-zA-Z0-9]/g, "-");
+}
+
+function initials(name) {
+  const words = name.replace(/[^A-Za-z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
+}
+
+function buildFilters() {
+  const wrap = d3.select("#filters");
+  const btns = wrap.selectAll(".filter-btn")
+    .data(INDUSTRIES, d => d.key)
+    .enter()
+    .append("button")
+    .attr("class", d => "filter-btn" + (d.key === activeIndustry ? " active" : ""))
+    .attr("data-key", d => d.key)
+    .style("--dot-swatch", d => COLORS[d.key] || "#888");
+
+  btns.append("span").attr("class", "swatch");
+  btns.append("span").text(d => d.label);
+
+  btns.on("click", (event, d) => setIndustry(d.key));
+}
+
+function setIndustry(key) {
+  activeIndustry = key;
+  d3.selectAll(".filter-btn").classed("active", d => d.key === key);
+  closePanel();
+  updateFocusState();
+}
+
+function measureWidth() {
+  const rect = document.getElementById("chart-wrap").getBoundingClientRect();
+  width = Math.max(420, rect.width);
+  svg.attr("viewBox", `0 0 ${width} ${height}`);
+  centerX = margin.left + (width - margin.left - margin.right) / 2;
+}
+
+function buildScale(data) {
+  const vals = data.map(d => d.complexity_change_score).filter(v => !isNaN(v));
+  const dataMin = d3.min(vals);
+  const dataMax = d3.max(vals);
+  const lo = Math.min(-2, dataMin) - 0.15;
+  const hi = Math.max(2, dataMax) + 0.15;
+  // reversed range: higher (more complex) score renders near the top
+  scoreScale = d3.scaleLinear().domain([lo, hi]).range([height - margin.bottom, margin.top]);
+}
+
+function drawAxis() {
+  gAxis.selectAll("*").remove();
+
+  const zeroY = scoreScale(0);
+  gAxis.append("line")
+    .attr("class", "zero-line")
+    .attr("x1", margin.left - 10).attr("x2", width - margin.right + 10)
+    .attr("y1", zeroY).attr("y2", zeroY);
+
+  gAxis.append("line")
+    .attr("class", "axis-line")
+    .attr("x1", margin.left).attr("x2", margin.left)
+    .attr("y1", margin.top - 16).attr("y2", height - margin.bottom + 16);
+
+  const ticks = [-2, -1, 0, 1, 2];
+  const tickG = gAxis.selectAll(".tick-g")
+    .data(ticks)
+    .enter()
+    .append("g")
+    .attr("class", "tick-g")
+    .attr("transform", d => `translate(${margin.left}, ${scoreScale(d)})`);
+
+  tickG.append("line").attr("class", "tick-line").attr("x1", -6).attr("x2", 0);
+  tickG.append("text")
+    .attr("class", "tick-text")
+    .attr("x", -12)
+    .attr("dy", "0.32em")
+    .attr("text-anchor", "end")
+    .text(d => (d > 0 ? "+" + d : d));
+
+  gAxis.append("text")
+    .attr("class", "axis-caption")
+    .attr("x", margin.left)
+    .attr("y", margin.top - 26)
+    .attr("text-anchor", "start")
+    .text("more complex ↑");
+
+  gAxis.append("text")
+    .attr("class", "axis-caption")
+    .attr("x", margin.left)
+    .attr("y", height - margin.bottom + 42)
+    .attr("text-anchor", "start")
+    .text("more simple ↓");
+}
+
+function latestLogoRow(brand) {
+  const rows = timelinesByBrand.get(brand) || [];
+  if (!rows.length) return null;
+  return rows.slice().sort((a, b) => b.year - a.year)[0];
+}
+
+function initSim(data) {
+  nodes = data.map(d => ({
+    ...d,
+    r: CONTEXT_R,
+    y: scoreScale(d.complexity_change_score),
+    x: centerX + (Math.random() - 0.5) * 40,
+  }));
+
+  simulation = d3.forceSimulation(nodes)
+    .force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1))
+    .force("x", d3.forceX(() => centerX).strength(0.04))
+    .force("collide", d3.forceCollide(d => d.r + 1))
+    .alphaDecay(0.05)
+    .velocityDecay(0.5)
+    .on("tick", ticked)
+    .stop();
+
+  for (let i = 0; i < 260; i++) simulation.tick();
+}
+
+function clampNode(d) {
+  d.x = Math.max(margin.left + d.r + 10, Math.min(width - margin.right - d.r, d.x));
+  d.y = Math.max(margin.top + d.r, Math.min(height - margin.bottom - d.r, d.y));
+}
+
+function ticked() {
+  nodes.forEach(clampNode);
+  gDots.selectAll("g.node").attr("transform", d => `translate(${d.x}, ${d.y})`);
+}
+
+function renderDots() {
+  const groups = gDots.selectAll("g.node")
+    .data(nodes, d => d.brand)
+    .enter()
+    .append("g")
+    .attr("class", "node");
+
+  groups.append("clipPath")
+    .attr("id", d => `clip-${slug(d.brand)}`)
+    .append("circle")
+    .attr("r", CONTEXT_R);
+
+  groups.append("circle")
+    .attr("class", "node-bg")
+    .attr("r", CONTEXT_R)
+    .attr("fill", "var(--rug)");
+
+  groups.append("image")
+    .attr("class", "node-logo")
+    .attr("clip-path", d => `url(#clip-${slug(d.brand)})`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .style("opacity", 0);
+
+  groups.append("text")
+    .attr("class", "fallback-initials")
+    .style("opacity", 0);
+
+  groups.append("circle")
+    .attr("class", "hit")
+    .attr("r", 10);
+
+  groups
+    .on("mousemove", (event, d) => showTooltip(event, d))
+    .on("mouseleave", hideTooltip)
+    .on("click", (event, d) => {
+      event.stopPropagation();
+      openPanel(d);
+    });
+}
+
+function showTooltip(event, d) {
+  const tt = d3.select("#tooltip");
+  tt.html(
+    `<div class="t-brand">${d.brand}</div>` +
+    `<div class="t-sub">${d.year_first}–${d.year_last} · ${BADGE_LABEL[d.complexity_label] || d.complexity_label}</div>` +
+    `<div class="t-sub">complexity change: ${d.complexity_change_score > 0 ? "+" : ""}${d.complexity_change_score.toFixed(2)}</div>`
+  );
+  tt.classed("visible", true)
+    .style("left", (event.clientX + 16) + "px")
+    .style("top", (event.clientY + 12) + "px");
+}
+
+function hideTooltip() {
+  d3.select("#tooltip").classed("visible", false);
+}
+
+function applyFocusedVisual(g, d) {
+  const accent = COLORS[d.industry] || "#888";
+  const bg = g.select("circle.node-bg");
+  const img = g.select("image.node-logo");
+  const fallback = g.select("text.fallback-initials");
+  const row = latestLogoRow(d.brand);
+
+  fallback.text(initials(d.brand));
+
+  if (!row) {
+    bg.attr("fill", accent).attr("stroke", "none");
+    img.style("opacity", 0);
+    fallback.style("opacity", 1);
+    return;
+  }
+
+  const src = `logos/${encodeURIComponent(d.brand)}/${encodeURIComponent(row.filename)}`;
+  bg.attr("fill", "var(--card-bg)").attr("stroke", accent).attr("stroke-width", 2.5);
+  fallback.style("opacity", 0);
+  img
+    .attr("width", d.r * 1.5)
+    .attr("height", d.r * 1.5)
+    .attr("x", -d.r * 0.75)
+    .attr("y", -d.r * 0.75)
+    .style("opacity", 1)
+    .on("error", function() {
+      bg.attr("fill", accent).attr("stroke", "none");
+      d3.select(this).style("opacity", 0);
+      fallback.style("opacity", 1);
+    })
+    .attr("href", src);
+}
+
+function updateFocusState() {
+  const focusOn = activeIndustry !== "all";
+
+  gDots.selectAll("g.node").each(function(d) {
+    d._focused = focusOn && d.industry === activeIndustry;
+    d.r = d._focused ? FOCUS_R : (focusOn ? CONTEXT_R_DIM : CONTEXT_R);
+  });
+
+  const sel = gDots.selectAll("g.node");
+
+  sel.select("clipPath circle").attr("r", d => d.r);
+  sel.select("circle.hit").attr("r", d => Math.max(10, d.r));
+  sel.select("circle.node-bg")
+    .attr("r", d => d.r)
+    .style("fill-opacity", d => !focusOn ? 1 : (d._focused ? 1 : 0.55));
+
+  sel.each(function(d) {
+    const g = d3.select(this);
+    if (d._focused) {
+      applyFocusedVisual(g, d);
+    } else {
+      g.select("circle.node-bg").attr("fill", "var(--rug)").attr("stroke", "none");
+      g.select("image.node-logo").style("opacity", 0);
+      g.select("text.fallback-initials").style("opacity", 0);
+    }
+  });
+
+  simulation.force("collide", d3.forceCollide(d => d.r + (focusOn ? 3 : 1)));
+  simulation.alpha(0.9).restart();
+}
+
+function directionLabel(brand) {
+  const rows = (timelinesByBrand.get(brand) || []).slice().sort((a, b) => a.year - b.year);
+  if (rows.length < 2) return "—";
+  const first = rows[0].hs_colorfulness;
+  const last = rows[rows.length - 1].hs_colorfulness;
+  if (first == null || last == null || isNaN(first) || isNaN(last)) return "—";
+  const diff = last - first;
+  if (Math.abs(diff) < 1) return "No change";
+  return diff > 0 ? "More colorful ↑" : "Less colorful ↓";
+}
+
+function tryLoadImage(container, brand, filename, year) {
+  const img = new Image();
+  img.onload = () => {
+    container.innerHTML = "";
+    container.appendChild(img);
+    container.classList.remove("placeholder");
+  };
+  img.onerror = () => {
+    container.classList.add("placeholder");
+    container.textContent = year;
+  };
+  img.src = `logos/${encodeURIComponent(brand)}/${encodeURIComponent(filename)}`;
+  container.textContent = year;
+  container.classList.add("placeholder");
+}
+
+function openPanel(d) {
+  const accent = COLORS[d.industry] || "#888";
+  const rows = (timelinesByBrand.get(d.brand) || []).slice().sort((a, b) => a.year - b.year);
+
+  const content = document.getElementById("popover-content");
+  content.innerHTML = `
+    <h2>${d.brand}</h2>
+    <div class="panel-accent-bar" style="--accent: ${accent}"></div>
+    <div class="panel-years">${d.year_first} – ${d.year_last}</div>
+    <span class="badge ${d.complexity_label}">${BADGE_LABEL[d.complexity_label] || d.complexity_label}</span>
+
+    <div class="panel-section-label">Logo timeline</div>
+    <div class="timeline-wrap">
+      <button class="strip-nav prev" aria-label="Scroll to earlier versions">&#8249;</button>
+      <div id="timeline-strip"></div>
+      <button class="strip-nav next" aria-label="Scroll to later versions">&#8250;</button>
+      <div class="edge-fade left"></div>
+      <div class="edge-fade right"></div>
+    </div>
+
+    <div class="panel-section-label">At a glance</div>
+    <div id="stat-pills">
+      <div class="stat-pill">
+        <div class="stat-label">Biggest change</div>
+        <div class="stat-value">${d.biggest_change_year} &middot; ${d.biggest_change_score > 0 ? "+" : ""}${(+d.biggest_change_score).toFixed(2)}</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">Logo versions tracked</div>
+        <div class="stat-value">${rows.length || d.version_count}</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">Colorfulness</div>
+        <div class="stat-value">${directionLabel(d.brand)}</div>
+      </div>
+    </div>
+  `;
+
+  const strip = document.getElementById("timeline-strip");
+  rows.forEach(r => {
+    const card = document.createElement("div");
+    card.className = "logo-card";
+    const frame = document.createElement("div");
+    frame.className = "logo-frame";
+    card.appendChild(frame);
+    const yearLabel = document.createElement("div");
+    yearLabel.className = "logo-year";
+    yearLabel.textContent = r.year;
+    card.appendChild(yearLabel);
+    strip.appendChild(card);
+    tryLoadImage(frame, d.brand, r.filename, r.year);
+  });
+
+  setupTimelineNav(content.querySelector(".timeline-wrap"));
+  positionPopover(d);
+}
+
+function setupTimelineNav(wrap) {
+  const strip = wrap.querySelector("#timeline-strip");
+  const prevBtn = wrap.querySelector(".strip-nav.prev");
+  const nextBtn = wrap.querySelector(".strip-nav.next");
+  const fadeLeft = wrap.querySelector(".edge-fade.left");
+  const fadeRight = wrap.querySelector(".edge-fade.right");
+  const STEP = 188;
+
+  function update() {
+    const overflow = strip.scrollWidth > strip.clientWidth + 2;
+    const atStart = strip.scrollLeft <= 2;
+    const atEnd = strip.scrollLeft >= strip.scrollWidth - strip.clientWidth - 2;
+    prevBtn.style.display = overflow ? "flex" : "none";
+    nextBtn.style.display = overflow ? "flex" : "none";
+    prevBtn.style.opacity = atStart ? "0.35" : "1";
+    nextBtn.style.opacity = atEnd ? "0.35" : "1";
+    fadeLeft.style.opacity = (overflow && !atStart) ? "1" : "0";
+    fadeRight.style.opacity = (overflow && !atEnd) ? "1" : "0";
+  }
+
+  prevBtn.onclick = (event) => { event.stopPropagation(); strip.scrollBy({ left: -STEP, behavior: "smooth" }); };
+  nextBtn.onclick = (event) => { event.stopPropagation(); strip.scrollBy({ left: STEP, behavior: "smooth" }); };
+  strip.addEventListener("scroll", update);
+  requestAnimationFrame(update);
+  setTimeout(update, 150); // re-check once logo images have finished loading and laid out
+
+  activeTimelineStrip = { strip, step: STEP };
+}
+
+function positionPopover(d) {
+  const popover = document.getElementById("popover");
+  const wrap = document.getElementById("chart-wrap");
+  const wrapRect = wrap.getBoundingClientRect();
+  const POP_WIDTH = 380;
+  const MARGIN = 14;
+  const GAP = 32; // extra breathing room from the dot, since the chart is now narrower/taller
+
+  popover.scrollTop = 0;
+  popover.style.width = POP_WIDTH + "px";
+
+  // anchor in viewport coordinates (d.x/d.y are chart-local, 1:1 with rendered px)
+  const anchorVX = wrapRect.left + d.x;
+  const anchorVY = wrapRect.top + d.y;
+
+  const popH = popover.scrollHeight || 300;
+
+  // always open to the right of the dot, with breathing room
+  let leftV = anchorVX + GAP;
+  leftV = Math.min(leftV, window.innerWidth - POP_WIDTH - MARGIN);
+  leftV = Math.max(MARGIN, leftV);
+
+  let topV = anchorVY - popH / 2;
+  topV = Math.max(MARGIN, Math.min(window.innerHeight - popH - MARGIN, topV));
+
+  // popover is a body-level element positioned in the document, so add scroll offsets
+  popover.style.left = (leftV + window.scrollX) + "px";
+  popover.style.top = (topV + window.scrollY) + "px";
+  popover.style.transformOrigin = `0px ${anchorVY - topV}px`;
+
+  popover.classList.add("open");
+}
+
+function closePanel() {
+  document.getElementById("popover").classList.remove("open");
+  activeTimelineStrip = null;
+}
+
+document.getElementById("popover-close").addEventListener("click", (event) => {
+  event.stopPropagation();
+  closePanel();
+});
+
+document.addEventListener("click", (event) => {
+  const popover = document.getElementById("popover");
+  if (!popover.classList.contains("open")) return;
+  if (popover.contains(event.target)) return;
+  closePanel();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!activeTimelineStrip) return;
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    activeTimelineStrip.strip.scrollBy({ left: -activeTimelineStrip.step, behavior: "smooth" });
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    activeTimelineStrip.strip.scrollBy({ left: activeTimelineStrip.step, behavior: "smooth" });
+  }
+});
+
+Promise.all([
+  d3.csv("data/summary.csv", d3.autoType),
+  d3.csv("data/timelines.csv", d3.autoType),
+]).then(([summary, timelines]) => {
+  timelines.forEach(r => {
+    if (!timelinesByBrand.has(r.brand)) timelinesByBrand.set(r.brand, []);
+    timelinesByBrand.get(r.brand).push(r);
+  });
+
+  buildFilters();
+  measureWidth();
+  buildScale(summary);
+  drawAxis();
+  initSim(summary);
+  renderDots();
+  ticked();
+  updateFocusState();
+
+  window.addEventListener("resize", () => {
+    closePanel();
+    measureWidth();
+    buildScale(summary);
+    drawAxis();
+    simulation.force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1));
+    simulation.force("x", d3.forceX(() => centerX).strength(0.04));
+    simulation.alpha(0.6).restart();
+  });
+}).catch(err => {
+  console.error("Failed to load data", err);
+  d3.select("#chart-wrap").append("div")
+    .style("color", "#c0392b")
+    .style("padding", "24px")
+    .text("Failed to load data/summary.csv or data/timelines.csv. Serve this folder with `python3 -m http.server 8000` and open it via http://localhost, not file://.");
+});
+</script>
+</body>
+</html>

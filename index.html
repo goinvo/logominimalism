@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>What's Happening to Logos?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #1c1c1a;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+
+  #story {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 24px 100px;
+  }
+
+  .panel-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 0 20px;
+  }
+
+  p {
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+  }
+
+  p.bold {
+    font-weight: 700;
+  }
+
+  .what-link {
+    color: #2563EB;
+  }
+
+  .placeholder-box {
+    background: #5fd07a;
+    border: 2px solid #35a852;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 180px;
+    margin: 0 0 20px;
+  }
+
+  .placeholder-box span {
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    color: #16351f;
+  }
+
+  .current-logo {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    margin: 8px auto 24px;
+  }
+
+  .logo-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px 20px;
+    margin: 0 0 24px;
+  }
+
+  .logo-grid figure {
+    margin: 0;
+    width: 150px;
+    text-align: center;
+  }
+
+  .logo-grid img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .logo-grid figcaption {
+    font-size: 14px;
+    color: #6b6b67;
+    margin-top: 8px;
+  }
+
+  #chart-embed-wrap {
+    max-width: 1100px;
+    margin: 8px auto 0;
+    padding: 0 24px;
+  }
+
+  #chart-embed-wrap iframe {
+    display: block;
+    width: 100%;
+    height: 965px;
+    border: none;
+  }
+</style>
+</head>
+<body>
+<div id="story">
+  <img class="panel-img" src="assets/panel1-mall.png" alt="">
+  <img class="panel-img" src="assets/panel2-toysrus.png" alt="">
+  <img class="panel-img" src="assets/panel3-bland.png" alt="">
+  <img class="panel-img" src="assets/panel4-question.png" alt="">
+  <img class="panel-img" src="assets/panel5-whats-happening.png" alt="">
+
+  <p>When I was a kid, it seemed like everything was bigger, brighter, and more interesting. Or maybe I was just smaller and hadn&rsquo;t seen as much as I have now. Nevertheless, the world is increasingly shifting from color to monotone, from funky design to copy-and-paste houses. The question I want to answer is:</p>
+
+  <p class="bold">How (and why) has the world, specifically logos, shifted from interesting to dull?</p>
+
+  <p>We begin this journey in the 1970s, around 50 years from today (2026). Flip through this photo album to see how things have changed since then.</p>
+
+  <div class="placeholder-box"><span>STORYBOOK PLACEHOLDER</span></div>
+
+  <p>Let&rsquo;s look at another example dear to American culture, which made all the Europeans go crazy when they visited for the World Cup: American chain restaurants.</p>
+
+  <p>My childhood favorite was Applebees. Here&rsquo;s the current logo.</p>
+
+  <img class="current-logo" src="logos/Applebees/2017.jpg" alt="">
+
+  <p>Applebees has been through a few changes since their inception in 1980.</p>
+
+  <div class="logo-grid">
+    <figure><img src="logos/Applebees/1980.jpg" alt=""><figcaption>1980</figcaption></figure>
+    <figure><img src="logos/Applebees/1982.png" alt=""><figcaption>1982</figcaption></figure>
+    <figure><img src="logos/Applebees/1983.png" alt=""><figcaption>1983</figcaption></figure>
+    <figure><img src="logos/Applebees/1985.png" alt=""><figcaption>1985</figcaption></figure>
+    <figure><img src="logos/Applebees/2007.jpg" alt=""><figcaption>2007</figcaption></figure>
+    <figure><img src="logos/Applebees/2014.jpg" alt=""><figcaption>2014</figcaption></figure>
+    <figure><img src="logos/Applebees/2017.jpg" alt=""><figcaption>2017</figcaption></figure>
+  </div>
+
+  <p>Visually, Applebee&rsquo;s has greatly simplified. Per our complexity calculation (<span class="what-link">what?</span>), it has a complexity change score of -1.4.</p>
+
+  <p class="bold">How does Applebees stack up against some other iconic chain restaurants?</p>
+</div>
+
+<div id="chart-embed-wrap">
+  <iframe src="chart.html" title="Logo evolution explorer"></iframe>
+</div>
+</body>
+</html>
