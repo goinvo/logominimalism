@@ -18,10 +18,18 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   }
 
-  #story {
+  .story {
     max-width: 720px;
     margin: 0 auto;
-    padding: 64px 24px 100px;
+    padding: 0 24px;
+  }
+
+  .story:first-of-type {
+    padding-top: 64px;
+  }
+
+  .story:last-of-type {
+    padding-bottom: 100px;
   }
 
   .panel-img {
@@ -45,21 +53,103 @@
     color: #2563EB;
   }
 
-  .placeholder-box {
-    background: #5fd07a;
-    border: 2px solid #35a852;
-    border-radius: 10px;
+  .polaroid-outer {
+    max-width: 1500px;
+    margin: 8px auto 40px;
+    padding: 0 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 180px;
-    margin: 0 0 20px;
+    gap: 20px;
   }
 
-  .placeholder-box span {
+  .polaroid-camera {
+    flex: none;
+    width: 190px;
+    height: auto;
+  }
+
+  .polaroid-strip-wrap {
+    flex: 1;
+    min-width: 0;
+    max-width: 1056px;
+    overflow: hidden;
+  }
+
+  .polaroid-strip {
+    display: flex;
+    align-items: flex-start;
+    gap: 48px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding: 20px 4px 30px;
+  }
+
+  .polaroid-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .polaroid-group {
+    display: flex;
+    flex: none;
+    gap: 20px;
+  }
+
+  .polaroid {
+    flex: none;
+    margin: 0;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    border-radius: 4px;
+    box-shadow: 0 8px 20px rgba(20, 20, 10, 0.14);
+    padding: 10px 10px 16px;
+    width: 240px;
+    text-align: left;
+  }
+
+  .polaroid img {
+    display: block;
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 2px;
+  }
+
+  .polaroid figcaption {
     font-size: 13px;
-    letter-spacing: 0.03em;
-    color: #16351f;
+    color: #2b2b28;
+    line-height: 1.3;
+    margin-top: 8px;
+  }
+
+  .polaroid-group .polaroid:first-child {
+    transform: rotate(-2deg);
+  }
+
+  .polaroid-group .polaroid:last-child {
+    transform: rotate(2deg);
+  }
+
+  .polaroid-nav {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1.5px solid #8f8f8a;
+    background: #ffffff;
+    color: #6b6b67;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 160ms ease, color 160ms ease;
+  }
+
+  .polaroid-nav:hover {
+    border-color: #1c1c1a;
+    color: #1c1c1a;
   }
 
   .current-logo {
@@ -96,22 +186,84 @@
     margin-top: 8px;
   }
 
-  #chart-embed-wrap {
-    max-width: 1100px;
+  .chart-embed-wrap {
+    max-width: 1600px;
     margin: 8px auto 0;
     padding: 0 24px;
   }
 
-  #chart-embed-wrap iframe {
+  .chart-embed-wrap iframe {
     display: block;
     width: 100%;
-    height: 965px;
+    height: 1034px;
     border: none;
+  }
+
+  .section-heading {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin: 48px 0 20px;
+  }
+
+  .palette-compare {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 64px;
+    max-width: 720px;
+    margin: 8px auto 40px;
+    padding: 0 24px;
+  }
+
+  .palette-item {
+    margin: 0;
+    text-align: center;
+  }
+
+  .palette-item img {
+    display: block;
+    max-width: 220px;
+    max-height: 90px;
+    width: auto;
+    height: auto;
+    margin: 0 auto 18px;
+    object-fit: contain;
+  }
+
+  .palette-circles {
+    display: flex;
+    justify-content: center;
+  }
+
+  .palette-circles .circle {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1px #e2e2dd;
+    margin-left: -28px;
+  }
+
+  .palette-circles .circle.white {
+    background: #ffffff;
+    box-shadow: 0 0 0 1.5px #9a9a9a;
+  }
+
+  .palette-circles .circle:first-child {
+    margin-left: 0;
+  }
+
+  .palette-item figcaption {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #6b6b67;
   }
 </style>
 </head>
 <body>
-<div id="story">
+<div class="story">
   <img class="panel-img" src="assets/panel1-mall.png" alt="">
   <img class="panel-img" src="assets/panel2-toysrus.png" alt="">
   <img class="panel-img" src="assets/panel3-bland.png" alt="">
@@ -122,10 +274,46 @@
 
   <p class="bold">How (and why) has the world, specifically logos, shifted from interesting to dull?</p>
 
-  <p>We begin this journey in the 1970s, around 50 years from today (2026). Flip through this photo album to see how things have changed since then.</p>
+  <p>We begin this journey in the 1970s, around 50 years from today (2026). Scroll through these polaroids to see how things have changed since then.</p>
+</div>
 
-  <div class="placeholder-box"><span>STORYBOOK PLACEHOLDER</span></div>
+<div class="polaroid-outer">
+  <img class="polaroid-camera" src="assets/polaroid-camera.png" alt="">
+  <button class="polaroid-nav" id="polaroid-prev" aria-label="Scroll back">
+    <svg viewBox="0 0 24 24" width="20" height="20">
+      <line x1="20" y1="12" x2="5" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <polyline points="11,6 5,12 11,18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <div class="polaroid-strip-wrap">
+    <div class="polaroid-strip" id="polaroid-strip">
+      <div class="polaroid-group">
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-parking-1950.jpg" alt=""><figcaption>1950s parking lot</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-parking-2020.jpg" alt=""><figcaption>2020s parking lot</figcaption></figure>
+      </div>
+      <div class="polaroid-group">
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-livingroom-1950.jpg" alt=""><figcaption>1950s living room</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-livingroom-2020.jpg" alt=""><figcaption>2020s living room</figcaption></figure>
+      </div>
+      <div class="polaroid-group">
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-mall-1950.jpg" alt=""><figcaption>1950s Burlington Mall in Massachusetts</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-mall-2020.jpg" alt=""><figcaption>2020s Burlington Mall</figcaption></figure>
+      </div>
+      <div class="polaroid-group">
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-pacsun-1990.jpg" alt=""><figcaption>1990s PacSun</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-pacsun-2020.jpg" alt=""><figcaption>2020s PacSun</figcaption></figure>
+      </div>
+    </div>
+  </div>
+  <button class="polaroid-nav" id="polaroid-next" aria-label="Scroll forward">
+    <svg viewBox="0 0 24 24" width="20" height="20">
+      <line x1="4" y1="12" x2="19" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <polyline points="13,6 19,12 13,18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>
 
+<div class="story">
   <p>Let&rsquo;s look at another example dear to American culture, which made all the Europeans go crazy when they visited for the World Cup: American chain restaurants.</p>
 
   <p>My childhood favorite was Applebees. Here&rsquo;s the current logo.</p>
@@ -146,11 +334,67 @@
 
   <p>Visually, Applebee&rsquo;s has greatly simplified. Per our complexity calculation (<span class="what-link">what?</span>), it has a complexity change score of -1.4.</p>
 
-  <p class="bold">How does Applebees stack up against some other iconic chain restaurants?</p>
+  <p class="bold">How does Applebees&rsquo;s change in complexity stack up against other iconic brands?</p>
 </div>
 
-<div id="chart-embed-wrap">
+<h2 class="section-heading">Complexity Change</h2>
+<div class="chart-embed-wrap">
   <iframe src="chart.html" title="Logo evolution explorer"></iframe>
 </div>
+
+<div class="story">
+  <p>Color palette preferences have also drastically shifted since the 1970s. Continuing with Applebees, here&rsquo;s its 1980 logo color palette versus current day.</p>
+</div>
+
+<div class="palette-compare">
+  <figure class="palette-item">
+    <img src="logos/Applebees/1980.jpg" alt="">
+    <div class="palette-circles">
+      <div class="circle" style="background:#c1392b"></div>
+      <div class="circle" style="background:#2d6b67"></div>
+      <div class="circle white"></div>
+    </div>
+    <figcaption>1980</figcaption>
+  </figure>
+  <figure class="palette-item">
+    <img src="logos/Applebees/2017.jpg" alt="">
+    <div class="palette-circles">
+      <div class="circle" style="background:#a8482f"></div>
+      <div class="circle" style="background:#3a3938"></div>
+      <div class="circle white"></div>
+    </div>
+    <figcaption>current day</figcaption>
+  </figure>
+</div>
+
+<h2 class="section-heading">Distinctive Hues Count</h2>
+<div class="chart-embed-wrap">
+  <iframe src="hue-chart.html" title="Hue families explorer"></iframe>
+</div>
+
+<script>
+  const polaroidStrip = document.getElementById("polaroid-strip");
+  const firstGroup = polaroidStrip.querySelector(".polaroid-group");
+  const groupGap = parseFloat(getComputedStyle(polaroidStrip).columnGap || getComputedStyle(polaroidStrip).gap || 48);
+  const GROUP_STEP = firstGroup.getBoundingClientRect().width + groupGap;
+
+  document.getElementById("polaroid-next").addEventListener("click", () => {
+    const atEnd = polaroidStrip.scrollLeft >= polaroidStrip.scrollWidth - polaroidStrip.clientWidth - 4;
+    if (atEnd) {
+      polaroidStrip.scrollTo({ left: 0, behavior: "smooth" });
+    } else {
+      polaroidStrip.scrollBy({ left: GROUP_STEP, behavior: "smooth" });
+    }
+  });
+
+  document.getElementById("polaroid-prev").addEventListener("click", () => {
+    const atStart = polaroidStrip.scrollLeft <= 4;
+    if (atStart) {
+      polaroidStrip.scrollTo({ left: polaroidStrip.scrollWidth, behavior: "smooth" });
+    } else {
+      polaroidStrip.scrollBy({ left: -GROUP_STEP, behavior: "smooth" });
+    }
+  });
+</script>
 </body>
 </html>

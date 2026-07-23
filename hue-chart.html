@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Logo Evolution Explorer</title>
+<title>Hue Families Explorer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <style>
@@ -158,9 +158,6 @@
   .tick-text { fill: var(--ink-muted); font-size: 12px; }
   .axis-caption { fill: var(--ink-muted); font-size: 12.5px; font-weight: 500; }
 
-  .hint-tick { stroke: #E8472A; stroke-width: 2.5; stroke-linecap: round; }
-  .hint-text { fill: var(--ink); font-size: 13px; font-weight: 600; }
-
   circle.node-bg {
     transition: r 300ms ease, fill 300ms ease, fill-opacity 300ms ease, stroke 300ms ease, stroke-width 300ms ease;
     cursor: pointer;
@@ -171,19 +168,17 @@
     cursor: pointer;
   }
 
-  image.node-logo {
-    cursor: pointer;
-    transition: opacity 220ms ease;
-  }
-
-  text.fallback-initials {
-    fill: #fff;
-    font-size: 10px;
-    font-weight: 700;
+  text.node-label {
+    fill: var(--ink);
+    font-size: 11px;
+    font-weight: 600;
     text-anchor: middle;
-    dominant-baseline: middle;
     pointer-events: none;
-    transition: opacity 220ms ease;
+    opacity: 0;
+    stroke: #fbfbf9;
+    stroke-width: 3px;
+    paint-order: stroke;
+    transition: opacity 200ms ease;
   }
 
   #tooltip {
@@ -203,6 +198,20 @@
   }
 
   #tooltip.visible { opacity: 1; }
+  #tooltip .t-head { display: flex; align-items: center; gap: 8px; }
+  #tooltip .t-logo {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    border: 1px solid #e2e2dd;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #tooltip .t-logo img { max-width: 82%; max-height: 82%; object-fit: contain; }
   #tooltip .t-brand { font-weight: 700; }
   #tooltip .t-sub { color: var(--ink-muted); margin-top: 2px; }
 
@@ -264,18 +273,6 @@
     margin-bottom: 22px;
   }
 
-  .badge-solid {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 9px 16px;
-    border-radius: 8px;
-    color: #ffffff;
-  }
-
   .badge-outline {
     display: inline-flex;
     align-items: center;
@@ -296,7 +293,7 @@
 
   #timeline-strip {
     display: flex;
-    gap: 10px;
+    gap: 14px;
     overflow-x: auto;
     scroll-behavior: smooth;
     padding-bottom: 8px;
@@ -336,7 +333,7 @@
     position: absolute;
     top: 0;
     width: 26px;
-    height: 84px;
+    height: 132px;
     pointer-events: none;
     opacity: 0;
     transition: opacity 160ms ease;
@@ -388,14 +385,28 @@
     color: var(--ink-muted);
     margin-top: 6px;
   }
+
+  .logo-palette {
+    display: flex;
+    gap: 2px;
+    margin-top: 6px;
+    height: 16px;
+  }
+
+  .logo-palette .swatch {
+    flex: 1;
+    min-width: 0;
+    border-radius: 2px;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="nav-row">
     <a href="index.html">Story</a>
-    <a href="chart.html" class="current">Complexity chart</a>
-    <a href="hue-chart.html">Hue families</a>
+    <a href="chart.html">Complexity chart</a>
+    <a href="hue-chart.html" class="current">Hue families</a>
     <a href="palettes.html">Color palettes</a>
   </div>
   <div id="hint-row">
@@ -438,12 +449,6 @@ const COLORS = {
   auto:        "#475569",
 };
 
-const BADGE_LABEL = {
-  simplified: "Simplified",
-  more_complex: "More complex",
-  no_significant_change: "No significant change",
-};
-
 const CONTEXT_R = 4.5;
 const CONTEXT_R_DIM = 3.5;
 const FOCUS_R = 24; // 48px diameter
@@ -454,26 +459,15 @@ let nodes = [];
 let timelinesByBrand = new Map();
 let simulation;
 let width = 0, height = 860;
-let hintDismissed = false;
+let hintDismissed = true;
 const margin = { top: 50, right: 28, bottom: 70, left: 60 };
 
 const svg = d3.select("#chart");
 const gAxis = svg.append("g").attr("class", "axis-layer");
 const gDots = svg.append("g").attr("class", "dots-layer");
-const gHint = svg.append("g").attr("class", "hint-layer").style("pointer-events", "none");
 
 let scoreScale;
 let centerX;
-
-function slug(s) {
-  return s.replace(/[^a-zA-Z0-9]/g, "-");
-}
-
-function initials(name) {
-  const words = name.replace(/[^A-Za-z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
-  return name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
-}
 
 function buildFilters() {
   const wrap = d3.select("#filters");
@@ -506,12 +500,12 @@ function measureWidth() {
 }
 
 function buildScale(data) {
-  const vals = data.map(d => d.complexity_change_score).filter(v => !isNaN(v));
+  const vals = data.map(d => d.hue_families_delta).filter(v => !isNaN(v));
   const dataMin = d3.min(vals);
   const dataMax = d3.max(vals);
-  const lo = Math.min(-2, dataMin) - 0.15;
-  const hi = Math.max(2, dataMax) + 0.15;
-  // reversed range: higher (more complex) score renders near the top
+  const lo = Math.min(-3, dataMin) - 0.3;
+  const hi = Math.max(3, dataMax) + 0.3;
+  // reversed range: higher (more hue families) score renders near the top
   scoreScale = d3.scaleLinear().domain([lo, hi]).range([height - margin.bottom, margin.top]);
 }
 
@@ -529,7 +523,8 @@ function drawAxis() {
     .attr("x1", margin.left).attr("x2", margin.left)
     .attr("y1", margin.top - 16).attr("y2", height - margin.bottom + 16);
 
-  const ticks = [-2, -1, 0, 1, 2];
+  const dom = scoreScale.domain();
+  const ticks = d3.range(Math.ceil(dom[0]), Math.floor(dom[1]) + 1);
   const tickG = gAxis.selectAll(".tick-g")
     .data(ticks)
     .enter()
@@ -550,14 +545,14 @@ function drawAxis() {
     .attr("x", margin.left)
     .attr("y", margin.top - 26)
     .attr("text-anchor", "start")
-    .text("more complex ↑");
+    .text("more hues ↑");
 
   gAxis.append("text")
     .attr("class", "axis-caption")
     .attr("x", margin.left)
     .attr("y", height - margin.bottom + 42)
     .attr("text-anchor", "start")
-    .text("more simple ↓");
+    .text("less hues ↓");
 }
 
 function latestLogoRow(brand) {
@@ -566,16 +561,23 @@ function latestLogoRow(brand) {
   return rows.slice().sort((a, b) => b.year - a.year)[0];
 }
 
+function dominantColor(brand) {
+  const row = latestLogoRow(brand);
+  const palette = (row && row.palette ? String(row.palette) : "").split(",").map(s => s.trim()).filter(Boolean);
+  return palette[0] || "#b7b7b1";
+}
+
 function initSim(data) {
   nodes = data.map(d => ({
     ...d,
+    color: dominantColor(d.brand),
     r: CONTEXT_R,
-    y: scoreScale(d.complexity_change_score),
+    y: scoreScale(d.hue_families_delta),
     x: centerX + (Math.random() - 0.5) * 40,
   }));
 
   simulation = d3.forceSimulation(nodes)
-    .force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1))
+    .force("y", d3.forceY(d => scoreScale(d.hue_families_delta)).strength(1))
     .force("x", d3.forceX(() => centerX).strength(0.04))
     .force("collide", d3.forceCollide(d => d.r + 1))
     .alphaDecay(0.05)
@@ -594,46 +596,6 @@ function clampNode(d) {
 function ticked() {
   nodes.forEach(clampNode);
   gDots.selectAll("g.node").attr("transform", d => `translate(${d.x}, ${d.y})`);
-  if (!hintDismissed) updateLogoHint();
-}
-
-function pickHintTarget() {
-  const focused = nodes.filter(n => n._focused);
-  if (!focused.length) return null;
-  return focused.reduce((top, n) => (n.y < top.y ? n : top));
-}
-
-function updateLogoHint() {
-  const target = pickHintTarget();
-  gHint.selectAll("*").remove();
-  if (!target) return;
-
-  const cx = target.x, cy = target.y, r = target.r;
-
-  // three short "cheer" strokes fanning out toward the upper-right, like a sparkle accent
-  [-55, -10, 35].forEach(deg => {
-    const rad = deg * Math.PI / 180;
-    const x1 = cx + Math.cos(rad) * (r + 7);
-    const y1 = cy + Math.sin(rad) * (r + 7);
-    const x2 = cx + Math.cos(rad) * (r + 24);
-    const y2 = cy + Math.sin(rad) * (r + 24);
-    gHint.append("line")
-      .attr("class", "hint-tick")
-      .attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
-  });
-
-  const tx = Math.min(cx + r + 40, width - margin.right - 150);
-  const text = gHint.append("text")
-    .attr("class", "hint-text")
-    .attr("x", tx)
-    .attr("y", cy - 6);
-  text.append("tspan").attr("x", tx).attr("dy", 0).text("Click the logo to learn");
-  text.append("tspan").attr("x", tx).attr("dy", "1.3em").text("about its brand history!");
-}
-
-function dismissHint() {
-  hintDismissed = true;
-  gHint.selectAll("*").remove();
 }
 
 function renderDots() {
@@ -643,25 +605,16 @@ function renderDots() {
     .append("g")
     .attr("class", "node");
 
-  groups.append("clipPath")
-    .attr("id", d => `clip-${slug(d.brand)}`)
-    .append("circle")
-    .attr("r", CONTEXT_R);
-
   groups.append("circle")
     .attr("class", "node-bg")
     .attr("r", CONTEXT_R)
-    .attr("fill", "var(--rug)");
-
-  groups.append("image")
-    .attr("class", "node-logo")
-    .attr("clip-path", d => `url(#clip-${slug(d.brand)})`)
-    .attr("preserveAspectRatio", "xMidYMid meet")
-    .style("opacity", 0);
+    .attr("fill", d => d.color)
+    .attr("stroke", "#ffffff")
+    .attr("stroke-width", 1);
 
   groups.append("text")
-    .attr("class", "fallback-initials")
-    .style("opacity", 0);
+    .attr("class", "node-label")
+    .attr("dy", d => -(d.r + 8));
 
   groups.append("circle")
     .attr("class", "hit")
@@ -672,17 +625,22 @@ function renderDots() {
     .on("mouseleave", hideTooltip)
     .on("click", (event, d) => {
       event.stopPropagation();
-      dismissHint();
       openPanel(d);
     });
 }
 
 function showTooltip(event, d) {
+  const change = d.hue_families_delta;
+  const changeStr = change > 0 ? `+${change}` : `${change}`;
+  const row = latestLogoRow(d.brand);
+  const logoHtml = row
+    ? `<div class="t-logo"><img src="logos/${encodeURIComponent(d.brand)}/${encodeURIComponent(row.filename)}" alt="" onerror="this.parentElement.style.display='none'"></div>`
+    : "";
   const tt = d3.select("#tooltip");
   tt.html(
-    `<div class="t-brand">${d.brand}</div>` +
-    `<div class="t-sub">${d.year_first}–${d.year_last} · ${BADGE_LABEL[d.complexity_label] || d.complexity_label}</div>` +
-    `<div class="t-sub">complexity change: ${d.complexity_change_score > 0 ? "+" : ""}${d.complexity_change_score.toFixed(2)}</div>`
+    `<div class="t-head">${logoHtml}<div class="t-brand">${d.brand}</div></div>` +
+    `<div class="t-sub">Had ${d.hue_families_first} hue famil${d.hue_families_first === 1 ? "y" : "ies"} → now has ${d.hue_families_last}</div>` +
+    `<div class="t-sub">net change: ${changeStr}</div>`
   );
   tt.classed("visible", true)
     .style("left", (event.clientX + 16) + "px")
@@ -691,39 +649,6 @@ function showTooltip(event, d) {
 
 function hideTooltip() {
   d3.select("#tooltip").classed("visible", false);
-}
-
-function applyFocusedVisual(g, d) {
-  const accent = COLORS[d.industry] || "#888";
-  const bg = g.select("circle.node-bg");
-  const img = g.select("image.node-logo");
-  const fallback = g.select("text.fallback-initials");
-  const row = latestLogoRow(d.brand);
-
-  fallback.text(initials(d.brand));
-
-  if (!row) {
-    bg.attr("fill", accent).attr("stroke", "none");
-    img.style("opacity", 0);
-    fallback.style("opacity", 1);
-    return;
-  }
-
-  const src = `logos/${encodeURIComponent(d.brand)}/${encodeURIComponent(row.filename)}`;
-  bg.attr("fill", "var(--card-bg)").attr("stroke", accent).attr("stroke-width", 2.5);
-  fallback.style("opacity", 0);
-  img
-    .attr("width", d.r * 1.5)
-    .attr("height", d.r * 1.5)
-    .attr("x", -d.r * 0.75)
-    .attr("y", -d.r * 0.75)
-    .style("opacity", 1)
-    .on("error", function() {
-      bg.attr("fill", accent).attr("stroke", "none");
-      d3.select(this).style("opacity", 0);
-      fallback.style("opacity", 1);
-    })
-    .attr("href", src);
 }
 
 function updateFocusState() {
@@ -736,25 +661,24 @@ function updateFocusState() {
 
   const sel = gDots.selectAll("g.node");
 
-  sel.select("clipPath circle").attr("r", d => d.r);
   sel.select("circle.hit").attr("r", d => Math.max(10, d.r));
   sel.select("circle.node-bg")
     .attr("r", d => d.r)
-    .style("fill-opacity", d => !focusOn ? 1 : (d._focused ? 1 : 0.55));
+    .attr("fill", d => d.color)
+    .style("fill-opacity", d => !focusOn ? 1 : (d._focused ? 1 : 0.35));
 
-  sel.each(function(d) {
-    const g = d3.select(this);
-    if (d._focused) {
-      applyFocusedVisual(g, d);
-    } else {
-      g.select("circle.node-bg").attr("fill", "var(--rug)").attr("stroke", "none");
-      g.select("image.node-logo").style("opacity", 0);
-      g.select("text.fallback-initials").style("opacity", 0);
-    }
-  });
+  sel.select("text.node-label")
+    .attr("dy", d => -(d.r + 8))
+    .text(d => d._focused ? d.brand : "")
+    .style("opacity", d => d._focused ? 1 : 0);
 
   simulation.force("collide", d3.forceCollide(d => d.r + (focusOn ? 3 : 1)));
   simulation.alpha(0.9).restart();
+}
+
+function parsePalette(row) {
+  if (!row || !row.palette) return [];
+  return String(row.palette).split(",").map(s => s.trim()).filter(Boolean);
 }
 
 function tryLoadImage(container, brand, filename, year) {
@@ -777,13 +701,13 @@ function openPanel(d) {
   const accent = COLORS[d.industry] || "#888";
   const rows = (timelinesByBrand.get(d.brand) || []).slice().sort((a, b) => a.year - b.year);
   const versionCount = rows.length || d.version_count;
+  const changeStr = d.hue_families_delta > 0 ? `+${d.hue_families_delta}` : `${d.hue_families_delta}`;
 
   const content = document.getElementById("popover-content");
   content.innerHTML = `
     <h2>${d.brand}</h2>
-    <div class="panel-years">${d.year_first} - ${d.year_last}</div>
+    <div class="panel-years">${d.year_first} - ${d.year_last} &middot; ${d.hue_families_first} → ${d.hue_families_last} hue families (${changeStr})</div>
     <div class="popover-badges">
-      <span class="badge-solid" style="background: ${accent}">${BADGE_LABEL[d.complexity_label] || d.complexity_label}</span>
       <span class="badge-outline">${versionCount} logo version${versionCount === 1 ? "" : "s"}</span>
     </div>
     <div class="timeline-wrap">
@@ -799,15 +723,29 @@ function openPanel(d) {
   rows.forEach(r => {
     const card = document.createElement("div");
     card.className = "logo-card";
+
     const frame = document.createElement("div");
     frame.className = "logo-frame";
     card.appendChild(frame);
+    tryLoadImage(frame, d.brand, r.filename, r.year);
+
+    const palette = document.createElement("div");
+    palette.className = "logo-palette";
+    parsePalette(r).forEach(hex => {
+      const sw = document.createElement("div");
+      sw.className = "swatch";
+      sw.style.background = hex;
+      sw.title = hex;
+      palette.appendChild(sw);
+    });
+    card.appendChild(palette);
+
     const yearLabel = document.createElement("div");
     yearLabel.className = "logo-year";
     yearLabel.textContent = r.year;
     card.appendChild(yearLabel);
+
     strip.appendChild(card);
-    tryLoadImage(frame, d.brand, r.filename, r.year);
   });
 
   setupTimelineNav(content.querySelector(".timeline-wrap"));
@@ -820,7 +758,7 @@ function setupTimelineNav(wrap) {
   const nextBtn = wrap.querySelector(".strip-nav.next");
   const fadeLeft = wrap.querySelector(".edge-fade.left");
   const fadeRight = wrap.querySelector(".edge-fade.right");
-  const STEP = 188;
+  const STEP = 196;
 
   function update() {
     const overflow = strip.scrollWidth > strip.clientWidth + 2;
@@ -912,11 +850,13 @@ Promise.all([
     timelinesByBrand.get(r.brand).push(r);
   });
 
+  const data = summary.filter(d => !isNaN(d.hue_families_delta));
+
   buildFilters();
   measureWidth();
-  buildScale(summary);
+  buildScale(data);
   drawAxis();
-  initSim(summary);
+  initSim(data);
   renderDots();
   ticked();
   updateFocusState();
@@ -924,9 +864,9 @@ Promise.all([
   window.addEventListener("resize", () => {
     closePanel();
     measureWidth();
-    buildScale(summary);
+    buildScale(data);
     drawAxis();
-    simulation.force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1));
+    simulation.force("y", d3.forceY(d => scoreScale(d.hue_families_delta)).strength(1));
     simulation.force("x", d3.forceX(() => centerX).strength(0.04));
     simulation.alpha(0.6).restart();
   });
