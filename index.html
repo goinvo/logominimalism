@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://unpkg.com/scrollama@3.2.0/build/scrollama.js"></script>
 <style>
   * { box-sizing: border-box; }
 
@@ -260,6 +262,274 @@
     font-size: 14px;
     color: #6b6b67;
   }
+
+  /* ---- Rebrands by decade ---- */
+
+  .decades-widget {
+    max-width: 1400px;
+    margin: 8px auto 40px;
+    padding: 0 24px;
+  }
+
+  .decades-sticky {
+    position: sticky;
+    top: 0;
+    background: #ffffff;
+    padding: 16px 0 12px;
+    z-index: 5;
+  }
+
+  .decades-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .decades-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    color: #6b6b67;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+
+  .decades-filter-btn:hover {
+    border-color: #c9c9c2;
+    color: #1c1c1a;
+  }
+
+  .decades-filter-btn.active {
+    background: #f2f2ee;
+    border-color: #1c1c1a;
+    color: #1c1c1a;
+  }
+
+  .decades-filter-note {
+    font-size: 12.5px;
+    color: #9a9a95;
+    margin: 0 0 14px;
+  }
+
+  .decade-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    height: 160px;
+    border-bottom: 1px solid #e6e5e0;
+    padding-bottom: 2px;
+  }
+
+  .decade-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .decade-bar-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1c1c1a;
+    margin-bottom: 6px;
+  }
+
+  .decade-bar {
+    width: 100%;
+    max-width: 64px;
+    background: #d7d5cf;
+    border-radius: 5px 5px 0 0;
+    transition: background 300ms ease;
+  }
+
+  .decade-bar-col.active .decade-bar {
+    background: #1c1c1a;
+  }
+
+  .decade-bar-label {
+    font-size: 12.5px;
+    color: #6b6b67;
+    margin-top: 8px;
+  }
+
+  .decade-bar-col.active .decade-bar-label {
+    color: #1c1c1a;
+    font-weight: 700;
+  }
+
+  .decade-blocks {
+    padding-top: 8px;
+  }
+
+  /*
+   * Each block is a fixed height, always — opening/closing its drawer never
+   * changes that footprint. This matters beyond visual stability: Scrollama
+   * caches every step's trigger position at setup, and only recalculates on
+   * viewport resize, not on content-driven layout shifts. If a block's
+   * height changed when its drawer opened, every later block would shift
+   * down, silently invalidating their cached trigger points — steps would
+   * get skipped entirely on scroll. Cards that don't fit scroll internally
+   * within the drawer instead of growing the page.
+   */
+  .decade-block {
+    height: 78vh;
+    display: flex;
+    flex-direction: column;
+    padding-top: 8px;
+    border-top: 1px dashed #e6e5e0;
+  }
+
+  .decade-block:first-child {
+    border-top: none;
+  }
+
+  .decade-drawer-heading {
+    flex: none;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1c1c1a;
+    padding: 20px 0 4px;
+  }
+
+  .decade-drawer-outer {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 400ms ease;
+  }
+
+  .decade-drawer-outer.is-open {
+    grid-template-rows: 1fr;
+  }
+
+  .decade-drawer-inner {
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .decade-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 12px 0 24px;
+  }
+
+  @media (max-width: 900px) {
+    .decade-card-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 560px) {
+    .decade-card-grid { grid-template-columns: 1fr; }
+  }
+
+  .decade-card {
+    border: 1px solid #e6e5e0;
+    border-radius: 10px;
+    padding: 12px;
+    background: #ffffff;
+  }
+
+  .decade-pair-wrap {
+    text-align: center;
+  }
+
+  .decade-pair {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .decade-logo {
+    flex: 1;
+    min-width: 0;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .decade-logo img {
+    max-width: 100%;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .decade-logo.placeholder {
+    background: #f2f2ee;
+    border-radius: 6px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .decade-arrow {
+    flex: none;
+    color: #9a9a95;
+    font-size: 16px;
+  }
+
+  .decade-year {
+    font-size: 12.5px;
+    color: #6b6b67;
+    margin-top: 8px;
+  }
+
+  .decade-more-link {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: center;
+    font-size: 12px;
+    color: #2563EB;
+    cursor: pointer;
+    padding: 8px 0 0;
+    font-family: inherit;
+  }
+
+  .decade-more-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #e6e5e0;
+  }
+
+  .decade-more-wrap.is-open {
+    display: flex;
+  }
+
+  .decade-pair-sub .decade-logo {
+    height: 56px;
+  }
+
+  .decade-pair-sub .decade-logo img {
+    max-height: 56px;
+  }
+
+  .decade-empty {
+    font-size: 13px;
+    color: #9a9a95;
+    padding: 12px 0 24px;
+  }
 </style>
 </head>
 <body>
@@ -372,6 +642,16 @@
   <iframe src="hue-chart.html" title="Hue families explorer"></iframe>
 </div>
 
+<h2 class="section-heading">Rebrands By Decade</h2>
+<div class="decades-widget" id="decades-widget">
+  <div class="decades-sticky">
+    <div class="decades-filters" id="decades-filters"></div>
+    <p class="decades-filter-note">Bar heights show all industries. Cards filter to selected industry.</p>
+    <div class="decade-bars" id="decade-bars"></div>
+  </div>
+  <div class="decade-blocks" id="decade-blocks"></div>
+</div>
+
 <script>
   const polaroidStrip = document.getElementById("polaroid-strip");
   const firstGroup = polaroidStrip.querySelector(".polaroid-group");
@@ -395,6 +675,300 @@
       polaroidStrip.scrollBy({ left: -GROUP_STEP, behavior: "smooth" });
     }
   });
+</script>
+
+<script>
+(function () {
+  const DECADES = ["1970s", "1980s", "1990s", "2000s", "2010s", "2020s"];
+
+  const INDUSTRIES = [
+    { key: "all",        label: "All" },
+    { key: "restaurants", label: "Restaurants" },
+    { key: "retail",      label: "Retail" },
+    { key: "tech",        label: "Tech" },
+    { key: "fashion",     label: "Fashion" },
+    { key: "shipping",    label: "Shipping" },
+    { key: "food",        label: "Food & CPG" },
+    { key: "auto",        label: "Auto" },
+  ];
+
+  let activeIndustry = "all";
+  let activeDecade = null;
+  let scroller = null;
+  let resizeTimer = null;
+  const changesByDecade = new Map(DECADES.map(d => [d, []]));
+
+  function decadeOf(year) {
+    return `${Math.floor(year / 10) * 10}s`;
+  }
+
+  function logoUrl(brand, filename) {
+    return `logos/${encodeURIComponent(brand)}/${encodeURIComponent(filename)}`;
+  }
+
+  function buildLogo(brand, filename) {
+    const box = document.createElement("div");
+    box.className = "decade-logo";
+    const img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.addEventListener("error", () => {
+      img.remove();
+      box.classList.add("placeholder");
+    });
+    img.src = logoUrl(brand, filename);
+    box.appendChild(img);
+    return box;
+  }
+
+  function buildPair(brand, ev, isSub) {
+    const wrap = document.createElement("div");
+    wrap.className = "decade-pair-wrap";
+
+    const row = document.createElement("div");
+    row.className = "decade-pair" + (isSub ? " decade-pair-sub" : "");
+    row.appendChild(buildLogo(brand, ev.before.filename));
+
+    const arrow = document.createElement("div");
+    arrow.className = "decade-arrow";
+    arrow.textContent = "→";
+    row.appendChild(arrow);
+
+    row.appendChild(buildLogo(brand, ev.after.filename));
+    wrap.appendChild(row);
+
+    const year = document.createElement("div");
+    year.className = "decade-year";
+    year.textContent = ev.year;
+    wrap.appendChild(year);
+
+    return wrap;
+  }
+
+  function buildCard(brand, primary, extra) {
+    const card = document.createElement("div");
+    card.className = "decade-card";
+    card.appendChild(buildPair(brand, primary, false));
+
+    if (extra.length) {
+      const moreWrap = document.createElement("div");
+      moreWrap.className = "decade-more-wrap";
+      extra.forEach(ev => moreWrap.appendChild(buildPair(brand, ev, true)));
+
+      const label = n => `${n} more version${n === 1 ? "" : "s"} this decade →`;
+      const link = document.createElement("button");
+      link.type = "button";
+      link.className = "decade-more-link";
+      link.textContent = label(extra.length);
+      link.addEventListener("click", () => {
+        const opening = !moreWrap.classList.contains("is-open");
+        moreWrap.classList.toggle("is-open", opening);
+        link.textContent = opening ? "Show less" : label(extra.length);
+      });
+
+      card.appendChild(link);
+      card.appendChild(moreWrap);
+    }
+
+    return card;
+  }
+
+  function renderDecadeCards(decade) {
+    const container = document.getElementById(`decade-cards-${decade}`);
+    if (!container) return;
+
+    const events = changesByDecade.get(decade).filter(
+      e => activeIndustry === "all" || e.industry === activeIndustry
+    );
+
+    const byBrand = new Map();
+    events.forEach(e => {
+      if (!byBrand.has(e.brand)) byBrand.set(e.brand, []);
+      byBrand.get(e.brand).push(e);
+    });
+
+    const cards = [...byBrand.entries()].map(([brand, evs]) => {
+      const sorted = evs.slice().sort((a, b) => b.changeScore - a.changeScore);
+      const extra = sorted.slice(1).sort((a, b) => a.year - b.year);
+      return { brand, primary: sorted[0], extra };
+    });
+    cards.sort((a, b) => b.primary.changeScore - a.primary.changeScore);
+
+    container.innerHTML = "";
+    if (!cards.length) {
+      const empty = document.createElement("p");
+      empty.className = "decade-empty";
+      empty.textContent = `No changes for this industry in the ${decade}.`;
+      container.appendChild(empty);
+      return;
+    }
+    cards.forEach(({ brand, primary, extra }) => container.appendChild(buildCard(brand, primary, extra)));
+  }
+
+  function renderAllCards() {
+    DECADES.forEach(renderDecadeCards);
+  }
+
+  function setActiveDecade(decade) {
+    if (decade === activeDecade) return;
+    activeDecade = decade;
+    document.querySelectorAll(".decade-bar-col").forEach(el => {
+      el.classList.toggle("active", el.dataset.decade === decade);
+    });
+    document.querySelectorAll(".decade-drawer-outer").forEach(el => {
+      el.classList.toggle("is-open", el.dataset.decade === decade);
+    });
+
+    // Opening/closing a drawer changes every later block's position on the
+    // page (the CSS grid height transition pushes them down/up), which
+    // leaves Scrollama's cached step offsets stale — its automatic resize
+    // handling only covers viewport resize, not content-driven layout
+    // shifts like this. Recalculate once the 400ms transition has settled.
+    if (scroller) {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => scroller.resize(), 450);
+    }
+  }
+
+  function buildBars() {
+    const barsEl = document.getElementById("decade-bars");
+    const maxCount = Math.max(1, ...DECADES.map(d => changesByDecade.get(d).length));
+
+    DECADES.forEach(decade => {
+      const count = changesByDecade.get(decade).length;
+      const col = document.createElement("button");
+      col.type = "button";
+      col.className = "decade-bar-col";
+      col.dataset.decade = decade;
+
+      const countEl = document.createElement("div");
+      countEl.className = "decade-bar-count";
+      countEl.textContent = count;
+
+      const bar = document.createElement("div");
+      bar.className = "decade-bar";
+      bar.style.height = `${Math.max(6, (count / maxCount) * 130)}px`;
+
+      const label = document.createElement("div");
+      label.className = "decade-bar-label";
+      label.textContent = decade;
+
+      col.appendChild(countEl);
+      col.appendChild(bar);
+      col.appendChild(label);
+
+      col.addEventListener("click", () => {
+        document.getElementById(`decade-block-${decade}`)
+          .scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+
+      barsEl.appendChild(col);
+    });
+  }
+
+  function buildBlocks() {
+    const blocksEl = document.getElementById("decade-blocks");
+
+    DECADES.forEach(decade => {
+      const block = document.createElement("div");
+      block.className = "decade-block";
+      block.id = `decade-block-${decade}`;
+      block.dataset.decade = decade;
+
+      const heading = document.createElement("div");
+      heading.className = "decade-drawer-heading";
+      heading.textContent = decade;
+
+      const outer = document.createElement("div");
+      outer.className = "decade-drawer-outer";
+      outer.dataset.decade = decade;
+
+      const inner = document.createElement("div");
+      inner.className = "decade-drawer-inner";
+
+      const grid = document.createElement("div");
+      grid.className = "decade-card-grid";
+      grid.id = `decade-cards-${decade}`;
+
+      inner.appendChild(grid);
+      outer.appendChild(inner);
+      block.appendChild(heading);
+      block.appendChild(outer);
+      blocksEl.appendChild(block);
+    });
+  }
+
+  function buildFilters() {
+    const wrap = document.getElementById("decades-filters");
+    INDUSTRIES.forEach(({ key, label }) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "decades-filter-btn" + (key === activeIndustry ? " active" : "");
+
+      const text = document.createElement("span");
+      text.textContent = label;
+      btn.appendChild(text);
+
+      btn.addEventListener("click", () => {
+        activeIndustry = key;
+        document.querySelectorAll(".decades-filter-btn").forEach((el, i) => {
+          el.classList.toggle("active", INDUSTRIES[i].key === key);
+        });
+        renderAllCards();
+      });
+
+      wrap.appendChild(btn);
+    });
+  }
+
+  function setupObserver() {
+    scroller = scrollama();
+    scroller
+      .setup({ step: ".decade-block", offset: 0.5 })
+      .onStepEnter(({ element }) => setActiveDecade(element.dataset.decade));
+  }
+
+  Promise.all([
+    d3.csv("data/summary.csv", d3.autoType),
+    d3.csv("data/timelines.csv", d3.autoType),
+  ]).then(([summary, timelines]) => {
+    const brandIndustry = new Map(summary.map(r => [r.brand, r.industry]));
+
+    const byBrand = new Map();
+    timelines.forEach(r => {
+      if (!byBrand.has(r.brand)) byBrand.set(r.brand, []);
+      byBrand.get(r.brand).push(r);
+    });
+
+    byBrand.forEach((rows, brand) => {
+      const sorted = rows.slice().sort((a, b) => a.year - b.year);
+      for (let i = 1; i < sorted.length; i++) {
+        const cur = sorted[i];
+        if (cur.change_score === null || Number.isNaN(cur.change_score)) continue;
+        const decade = decadeOf(cur.year);
+        if (!changesByDecade.has(decade)) continue;
+        changesByDecade.get(decade).push({
+          brand,
+          industry: brandIndustry.get(brand) || "other",
+          before: sorted[i - 1],
+          after: cur,
+          year: cur.year,
+          changeScore: cur.change_score,
+        });
+      }
+    });
+
+    buildFilters();
+    buildBars();
+    buildBlocks();
+    renderAllCards();
+    setupObserver();
+  }).catch(err => {
+    console.error("Failed to load decade data", err);
+    document.getElementById("decade-blocks").innerHTML =
+      '<p class="decade-empty">Failed to load data/summary.csv or data/timelines.csv. Serve this folder with `python3 -m http.server 8000` and open it via http://localhost, not file://.</p>';
+  });
+})();
 </script>
 </body>
 </html>

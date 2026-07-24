@@ -92,22 +92,14 @@
     transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
   }
 
-  .filter-btn .swatch {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--dot-swatch, var(--ink-muted));
-    flex: none;
-  }
-
   .filter-btn:hover {
     border-color: #c9c9c2;
     color: var(--ink);
   }
 
   .filter-btn.active {
-    background: color-mix(in srgb, var(--dot-swatch, #666) 12%, #ffffff);
-    border-color: var(--dot-swatch, #666);
+    background: #f2f2ee;
+    border-color: var(--ink);
     color: var(--ink);
   }
 
@@ -452,10 +444,8 @@ function buildFilters() {
     .enter()
     .append("button")
     .attr("class", d => "filter-btn" + (d.key === activeIndustry ? " active" : ""))
-    .attr("data-key", d => d.key)
-    .style("--dot-swatch", d => COLORS[d.key] || "#888");
+    .attr("data-key", d => d.key);
 
-  btns.append("span").attr("class", "swatch");
   btns.append("span").text(d => d.label);
 
   btns.on("click", (event, d) => setIndustry(d.key));
