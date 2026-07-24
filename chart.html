@@ -40,23 +40,23 @@
   }
 
   #app {
-    min-width: 760px;
-    max-width: 1040px;
-    margin: 0 0 0 8%;
-    padding: 24px 24px 32px 24px;
+    min-width: 900px;
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 24px 28px 32px;
   }
 
   #hint-row {
     display: flex;
     align-items: flex-start;
-    gap: 22px;
+    gap: 18px;
     margin-bottom: 10px;
   }
 
   #hint-filter {
-    width: 200px;
+    width: 148px;
     flex: none;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--ink);
   }
@@ -64,14 +64,14 @@
   #layout {
     display: flex;
     align-items: flex-start;
-    gap: 22px;
+    gap: 18px;
   }
 
   #filters {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    width: 200px;
+    gap: 5px;
+    width: 148px;
     flex: none;
   }
 
@@ -83,10 +83,10 @@
     background: #ffffff;
     border: 1px solid #e2e2dd;
     color: var(--ink-muted);
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
-    padding: 8px 12px;
-    border-radius: 10px;
+    padding: 7px 10px;
+    border-radius: 9px;
     cursor: pointer;
     text-align: left;
     transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
@@ -124,14 +124,29 @@
   .axis-line { stroke: var(--axis); stroke-width: 1; opacity: 0.7; }
   .tick-line { stroke: var(--axis); stroke-width: 1; opacity: 0.7; }
   .tick-text { fill: var(--ink-muted); font-size: 12px; }
+  .year-tick-text { font-size: 11.5px; }
   .axis-caption { fill: var(--ink-muted); font-size: 12.5px; font-weight: 500; }
 
   .hint-tick { stroke: #E8472A; stroke-width: 2.5; stroke-linecap: round; }
   .hint-text { fill: var(--ink); font-size: 13px; font-weight: 600; }
 
+  g.dots-layer {
+    transition: opacity 280ms ease;
+  }
+
+  g.dots-layer.explore-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   circle.node-bg {
-    transition: r 300ms ease, fill 300ms ease, fill-opacity 300ms ease, stroke 300ms ease, stroke-width 300ms ease;
+    transition: r 300ms ease, fill 300ms ease, fill-opacity 300ms ease;
     cursor: pointer;
+  }
+
+  circle.node-ring {
+    transition: r 300ms ease, stroke 300ms ease, stroke-width 300ms ease;
+    pointer-events: none;
   }
 
   circle.hit {
@@ -154,6 +169,48 @@
     transition: opacity 220ms ease;
   }
 
+  .explode-path {
+    fill: none;
+    stroke: var(--ink-faint);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 4;
+  }
+
+  g.explode-node { cursor: pointer; }
+  circle.explode-ring { pointer-events: none; }
+
+  .explode-year {
+    font-size: 12.5px;
+    font-weight: 500;
+    fill: var(--ink-muted);
+    pointer-events: none;
+  }
+
+  .explode-back {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 5;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    color: var(--ink);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+
+  .explode-back.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
   #tooltip {
     position: fixed;
     pointer-events: none;
@@ -173,189 +230,6 @@
   #tooltip.visible { opacity: 1; }
   #tooltip .t-brand { font-weight: 700; }
   #tooltip .t-sub { color: var(--ink-muted); margin-top: 2px; }
-
-  /* in-place popover */
-  .brand-popover {
-    position: absolute;
-    width: 460px;
-    max-height: min(680px, 88vh);
-    overflow-y: auto;
-    background: var(--panel-bg);
-    border: 1.5px solid #4b4b48;
-    border-radius: 12px;
-    padding: 24px 24px 26px;
-    z-index: 40;
-    opacity: 0;
-    pointer-events: none;
-    transform: scale(0.85);
-    transition: transform 220ms cubic-bezier(.2,.8,.3,1), opacity 180ms ease;
-  }
-
-  .brand-popover.open {
-    opacity: 1;
-    pointer-events: auto;
-    transform: scale(1);
-  }
-
-  #popover-close {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    background: none;
-    border: none;
-    color: var(--ink-muted);
-    font-size: 20px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 4px;
-  }
-
-  #popover-close:hover { color: var(--ink); }
-
-  #popover-content h2 {
-    margin: 0 24px 4px 0;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--ink);
-  }
-
-  .panel-years {
-    color: var(--ink-muted);
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-
-  .popover-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 22px;
-  }
-
-  .badge-solid {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 9px 16px;
-    border-radius: 8px;
-    color: #ffffff;
-  }
-
-  .badge-outline {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 9px 16px;
-    border-radius: 8px;
-    background: #ffffff;
-    border: 2px solid #14b8a6;
-    color: #14b8a6;
-  }
-
-  .timeline-wrap {
-    position: relative;
-  }
-
-  #timeline-strip {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    padding-bottom: 8px;
-    margin: 0 -4px;
-    scrollbar-width: none;
-  }
-
-  #timeline-strip::-webkit-scrollbar {
-    display: none;
-  }
-
-  .strip-nav {
-    position: absolute;
-    top: 34px;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 1px solid #e2e2dd;
-    box-shadow: 0 2px 8px rgba(20,20,10,0.14);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    line-height: 1;
-    color: var(--ink);
-    cursor: pointer;
-    z-index: 3;
-    transition: opacity 160ms ease;
-  }
-
-  .strip-nav.prev { left: -6px; }
-  .strip-nav.next { right: -6px; }
-  .strip-nav:hover { background: #f5f5f2; }
-
-  .edge-fade {
-    position: absolute;
-    top: 0;
-    width: 26px;
-    height: 84px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 160ms ease;
-    z-index: 2;
-  }
-
-  .edge-fade.left {
-    left: -4px;
-    background: linear-gradient(to right, var(--panel-bg) 30%, transparent);
-  }
-
-  .edge-fade.right {
-    right: -4px;
-    background: linear-gradient(to left, var(--panel-bg) 30%, transparent);
-  }
-
-  .logo-card {
-    flex: none;
-    width: 84px;
-    text-align: center;
-  }
-
-  .logo-frame {
-    width: 84px;
-    height: 84px;
-    background: #fff;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border: 1px solid #ececE7;
-  }
-
-  .logo-frame img {
-    max-width: 78%;
-    max-height: 78%;
-    object-fit: contain;
-  }
-
-  .logo-frame.placeholder {
-    background: #f2f2ee;
-    color: var(--ink-faint);
-    font-size: 11px;
-  }
-
-  .logo-year {
-    font-size: 11px;
-    color: var(--ink-muted);
-    margin-top: 6px;
-  }
 </style>
 </head>
 <body>
@@ -366,14 +240,10 @@
   <div id="layout">
     <nav id="filters"></nav>
     <div id="chart-wrap">
+      <button id="explode-back" class="explode-back" type="button">&larr; All brands</button>
       <svg id="chart"></svg>
     </div>
   </div>
-</div>
-
-<div id="popover" class="brand-popover">
-  <button id="popover-close" aria-label="Close">&times;</button>
-  <div id="popover-content"></div>
 </div>
 
 <div id="tooltip"></div>
@@ -390,15 +260,7 @@ const INDUSTRIES = [
   { key: "auto",         label: "Auto" },
 ];
 
-const COLORS = {
-  restaurants: "#E8472A",
-  retail:      "#2563EB",
-  tech:        "#7C3AED",
-  fashion:     "#0D9488",
-  shipping:    "#D97706",
-  food:        "#DC2626",
-  auto:        "#475569",
-};
+const ACCENT = "#E8472A"; // circle borders are always this red now — no more per-industry color coding
 
 const BADGE_LABEL = {
   simplified: "Simplified",
@@ -406,26 +268,38 @@ const BADGE_LABEL = {
   no_significant_change: "No significant change",
 };
 
-const CONTEXT_R = 4.5;
-const CONTEXT_R_DIM = 3.5;
-const FOCUS_R = 24; // 48px diameter
+const CONTEXT_R = 6;
+const CONTEXT_R_DIM = 5;
+const FOCUS_R = 34; // 68px diameter
+const EXPLODE_R = 64; // logo history is the emphasis once opened
+const PRESENT_BAND_FRAC = 0.24;
+const CURRENT_YEAR = new Date().getFullYear();
 
 let activeIndustry = "restaurants";
-let activeTimelineStrip = null;
 let nodes = [];
 let timelinesByBrand = new Map();
 let simulation;
 let width = 0, height = 860;
 let hintDismissed = false;
-const margin = { top: 50, right: 28, bottom: 70, left: 60 };
+const margin = { top: 50, right: 32, bottom: 92, left: 64 };
 
 const svg = d3.select("#chart");
 const gAxis = svg.append("g").attr("class", "axis-layer");
 const gDots = svg.append("g").attr("class", "dots-layer");
+const gExplode = svg.append("g").attr("class", "explode-layer");
+const gExplodeLines = gExplode.append("g").attr("class", "explode-lines");
+const gExplodeDots = gExplode.append("g").attr("class", "explode-dots");
 const gHint = svg.append("g").attr("class", "hint-layer").style("pointer-events", "none");
 
 let scoreScale;
-let centerX;
+let xScale;
+let axisStartYear = 1970; // recomputed from the earliest real data year once loaded
+let presentBandX0, presentBandX1, presentCenterX;
+let edgeDensityMean = 0, edgeDensityStd = 1;
+
+let explodedBrand = null;
+let explodeNodes = [];
+let explodeSim = null;
 
 function slug(s) {
   return s.replace(/[^a-zA-Z0-9]/g, "-");
@@ -454,15 +328,46 @@ function buildFilters() {
 function setIndustry(key) {
   activeIndustry = key;
   d3.selectAll(".filter-btn").classed("active", d => d.key === key);
-  closePanel();
+  closeExplode();
   updateFocusState();
+}
+
+function setXScale(domain) {
+  xScale = d3.scaleLinear().domain(domain).range([margin.left, width - margin.right]);
+}
+
+function baseXDomain() {
+  return [axisStartYear, CURRENT_YEAR];
 }
 
 function measureWidth() {
   const rect = document.getElementById("chart-wrap").getBoundingClientRect();
-  width = Math.max(420, rect.width);
+  width = Math.max(760, rect.width);
   svg.attr("viewBox", `0 0 ${width} ${height}`);
-  centerX = margin.left + (width - margin.left - margin.right) / 2;
+
+  const plotLeft = margin.left, plotRight = width - margin.right;
+  setXScale(baseXDomain());
+
+  const bandW = (plotRight - plotLeft) * PRESENT_BAND_FRAC;
+  presentBandX1 = plotRight;
+  presentBandX0 = plotRight - bandW;
+  presentCenterX = (presentBandX0 + presentBandX1) / 2;
+}
+
+function computeEdgeDensityStats(timelines) {
+  const vals = timelines.map(r => r.edge_density).filter(v => typeof v === "number" && !isNaN(v));
+  edgeDensityMean = d3.mean(vals);
+  edgeDensityStd = d3.deviation(vals) || 1;
+}
+
+function edgeDensityZ(v) {
+  if (v == null || isNaN(v)) return 0;
+  return (v - edgeDensityMean) / edgeDensityStd;
+}
+
+function clampToScoreDomain(v) {
+  const [lo, hi] = scoreScale.domain();
+  return Math.max(lo + 0.1, Math.min(hi - 0.1, v));
 }
 
 function buildScale(data) {
@@ -475,8 +380,25 @@ function buildScale(data) {
   scoreScale = d3.scaleLinear().domain([lo, hi]).range([height - margin.bottom, margin.top]);
 }
 
+function xAxisTickYears() {
+  if (explodedBrand) {
+    // zoomed to one brand's own year span — let d3 pick sensible round ticks
+    // for whatever narrower range is currently in view
+    return xScale.ticks(6).filter(y => Number.isInteger(y));
+  }
+  const [startYear] = xScale.domain();
+  const step = (CURRENT_YEAR - startYear) > 70 ? 20 : 10;
+  const base = [];
+  for (let y = startYear; y < CURRENT_YEAR; y += step) base.push(y);
+  // drop the last regular tick if it would sit too close to the "present" tick
+  const filtered = base.filter(y => CURRENT_YEAR - y > 3);
+  return [...filtered, CURRENT_YEAR];
+}
+
 function drawAxis() {
   gAxis.selectAll("*").remove();
+
+  const plotTop = margin.top - 16, plotBottom = height - margin.bottom + 16;
 
   const zeroY = scoreScale(0);
   gAxis.append("line")
@@ -487,7 +409,7 @@ function drawAxis() {
   gAxis.append("line")
     .attr("class", "axis-line")
     .attr("x1", margin.left).attr("x2", margin.left)
-    .attr("y1", margin.top - 16).attr("y2", height - margin.bottom + 16);
+    .attr("y1", plotTop).attr("y2", plotBottom);
 
   const ticks = [-2, -1, 0, 1, 2];
   const tickG = gAxis.selectAll(".tick-g")
@@ -515,9 +437,37 @@ function drawAxis() {
   gAxis.append("text")
     .attr("class", "axis-caption")
     .attr("x", margin.left)
-    .attr("y", height - margin.bottom + 42)
+    .attr("y", height - margin.bottom + 74)
     .attr("text-anchor", "start")
     .text("more simple ↓");
+
+  // year (x) axis, along the bottom — the collapsed complexity dots live in
+  // the shaded present-day band on the right; clicking one spreads its own
+  // version history back across this same timeline by real year.
+  gAxis.append("line")
+    .attr("class", "axis-line")
+    .attr("x1", margin.left).attr("x2", width - margin.right)
+    .attr("y1", plotBottom).attr("y2", plotBottom);
+
+  const yearTicks = xAxisTickYears();
+  const yearG = gAxis.selectAll(".year-tick-g")
+    .data(yearTicks)
+    .enter()
+    .append("g")
+    .attr("class", "year-tick-g")
+    .attr("transform", d => `translate(${xScale(d)}, ${plotBottom})`);
+
+  yearG.append("line").attr("class", "tick-line").attr("x1", 0).attr("x2", 0).attr("y1", 0).attr("y2", 6);
+  yearG.append("text")
+    .attr("class", "tick-text year-tick-text")
+    .attr("y", 20)
+    .attr("text-anchor", d => {
+      const x = xScale(d);
+      if (x <= margin.left + 20) return "start";
+      if (x >= width - margin.right - 20) return "end";
+      return "middle";
+    })
+    .text(d => (d === CURRENT_YEAR && !explodedBrand) ? `${d} (present)` : d);
 }
 
 function latestLogoRow(brand) {
@@ -531,12 +481,12 @@ function initSim(data) {
     ...d,
     r: CONTEXT_R,
     y: scoreScale(d.complexity_change_score),
-    x: centerX + (Math.random() - 0.5) * 40,
+    x: presentCenterX + (Math.random() - 0.5) * 30,
   }));
 
   simulation = d3.forceSimulation(nodes)
     .force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1))
-    .force("x", d3.forceX(() => centerX).strength(0.04))
+    .force("x", d3.forceX(() => presentCenterX).strength(0.06))
     .force("collide", d3.forceCollide(d => d.r + 1))
     .alphaDecay(0.05)
     .velocityDecay(0.5)
@@ -547,7 +497,7 @@ function initSim(data) {
 }
 
 function clampNode(d) {
-  d.x = Math.max(margin.left + d.r + 10, Math.min(width - margin.right - d.r, d.x));
+  d.x = Math.max(presentBandX0 + d.r + 6, Math.min(presentBandX1 - d.r - 6, d.x));
   d.y = Math.max(margin.top + d.r, Math.min(height - margin.bottom - d.r, d.y));
 }
 
@@ -582,11 +532,15 @@ function updateLogoHint() {
       .attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
   });
 
-  const tx = Math.min(cx + r + 40, width - margin.right - 150);
+  // The present-day cluster is crowded on its own, so route the label out to
+  // the open space to its left rather than trying to fit it beside the
+  // circle within the cluster (where it used to overlap neighboring dots).
+  const tx = Math.min(cx - r - 14, presentBandX0 - 12);
   const text = gHint.append("text")
     .attr("class", "hint-text")
     .attr("x", tx)
-    .attr("y", cy - 6);
+    .attr("y", cy - 6)
+    .attr("text-anchor", "end");
   text.append("tspan").attr("x", tx).attr("dy", 0).text("Click the logo to learn");
   text.append("tspan").attr("x", tx).attr("dy", "1.3em").text("about its brand history!");
 }
@@ -619,6 +573,14 @@ function renderDots() {
     .attr("preserveAspectRatio", "xMidYMid meet")
     .style("opacity", 0);
 
+  // drawn after the image (i.e. on top) so its ring isn't undercut by the
+  // clipped logo's edge — a plain fill+stroke circle behind the image can
+  // let square logo corners peek past the circle's edge (seen on Wendy's)
+  groups.append("circle")
+    .attr("class", "node-ring")
+    .attr("r", CONTEXT_R)
+    .attr("fill", "none");
+
   groups.append("text")
     .attr("class", "fallback-initials")
     .style("opacity", 0);
@@ -633,7 +595,7 @@ function renderDots() {
     .on("click", (event, d) => {
       event.stopPropagation();
       dismissHint();
-      openPanel(d);
+      explodeBrand(d);
     });
 }
 
@@ -654,8 +616,8 @@ function hideTooltip() {
 }
 
 function applyFocusedVisual(g, d) {
-  const accent = COLORS[d.industry] || "#888";
   const bg = g.select("circle.node-bg");
+  const ring = g.select("circle.node-ring");
   const img = g.select("image.node-logo");
   const fallback = g.select("text.fallback-initials");
   const row = latestLogoRow(d.brand);
@@ -663,14 +625,16 @@ function applyFocusedVisual(g, d) {
   fallback.text(initials(d.brand));
 
   if (!row) {
-    bg.attr("fill", accent).attr("stroke", "none");
+    bg.attr("fill", ACCENT);
+    ring.attr("stroke", "none");
     img.style("opacity", 0);
     fallback.style("opacity", 1);
     return;
   }
 
   const src = `logos/${encodeURIComponent(d.brand)}/${encodeURIComponent(row.filename)}`;
-  bg.attr("fill", "var(--card-bg)").attr("stroke", accent).attr("stroke-width", 2.5);
+  bg.attr("fill", "var(--card-bg)");
+  ring.attr("stroke", ACCENT).attr("stroke-width", 2.5);
   fallback.style("opacity", 0);
   img
     .attr("width", d.r * 1.5)
@@ -679,7 +643,8 @@ function applyFocusedVisual(g, d) {
     .attr("y", -d.r * 0.75)
     .style("opacity", 1)
     .on("error", function() {
-      bg.attr("fill", accent).attr("stroke", "none");
+      bg.attr("fill", ACCENT);
+      ring.attr("stroke", "none");
       d3.select(this).style("opacity", 0);
       fallback.style("opacity", 1);
     })
@@ -701,13 +666,15 @@ function updateFocusState() {
   sel.select("circle.node-bg")
     .attr("r", d => d.r)
     .style("fill-opacity", d => !focusOn ? 1 : (d._focused ? 1 : 0.55));
+  sel.select("circle.node-ring").attr("r", d => d.r);
 
   sel.each(function(d) {
     const g = d3.select(this);
     if (d._focused) {
       applyFocusedVisual(g, d);
     } else {
-      g.select("circle.node-bg").attr("fill", "var(--rug)").attr("stroke", "none");
+      g.select("circle.node-bg").attr("fill", "var(--rug)");
+      g.select("circle.node-ring").attr("stroke", "none");
       g.select("image.node-logo").style("opacity", 0);
       g.select("text.fallback-initials").style("opacity", 0);
     }
@@ -717,150 +684,253 @@ function updateFocusState() {
   simulation.alpha(0.9).restart();
 }
 
-function tryLoadImage(container, brand, filename, year) {
-  const img = new Image();
-  img.onload = () => {
-    container.innerHTML = "";
-    container.appendChild(img);
-    container.classList.remove("placeholder");
-  };
-  img.onerror = () => {
-    container.classList.add("placeholder");
-    container.textContent = year;
-  };
-  img.src = `logos/${encodeURIComponent(brand)}/${encodeURIComponent(filename)}`;
-  container.textContent = year;
-  container.classList.add("placeholder");
-}
+// Turns a single "present day" summary dot into that brand's full version
+// history, spread across the real timeline by year. Y uses each version's
+// own structural complexity (edge density, z-scored against the whole
+// dataset) rather than the summary's first-vs-last delta — a different but
+// comparable metric, since there's no per-intermediate-version equivalent of
+// the summary score in the data.
+function explodeBrand(d) {
+  if (explodedBrand === d.brand) {
+    closeExplode();
+    return;
+  }
 
-function openPanel(d) {
-  const accent = COLORS[d.industry] || "#888";
   const rows = (timelinesByBrand.get(d.brand) || []).slice().sort((a, b) => a.year - b.year);
-  const versionCount = rows.length || d.version_count;
+  if (!rows.length) return;
 
-  const content = document.getElementById("popover-content");
-  content.innerHTML = `
-    <h2>${d.brand}</h2>
-    <div class="panel-years">${d.year_first} - ${d.year_last}</div>
-    <div class="popover-badges">
-      <span class="badge-solid" style="background: ${accent}">${BADGE_LABEL[d.complexity_label] || d.complexity_label}</span>
-      <span class="badge-outline">${versionCount} logo version${versionCount === 1 ? "" : "s"}</span>
-    </div>
-    <div class="timeline-wrap">
-      <button class="strip-nav prev" aria-label="Scroll to earlier versions">&#8249;</button>
-      <div id="timeline-strip"></div>
-      <button class="strip-nav next" aria-label="Scroll to later versions">&#8250;</button>
-      <div class="edge-fade left"></div>
-      <div class="edge-fade right"></div>
-    </div>
-  `;
+  explodedBrand = d.brand;
+  const origin = { x: d.x, y: d.y };
 
-  const strip = document.getElementById("timeline-strip");
-  rows.forEach(r => {
-    const card = document.createElement("div");
-    card.className = "logo-card";
-    const frame = document.createElement("div");
-    frame.className = "logo-frame";
-    card.appendChild(frame);
-    const yearLabel = document.createElement("div");
-    yearLabel.className = "logo-year";
-    yearLabel.textContent = r.year;
-    card.appendChild(yearLabel);
-    strip.appendChild(card);
-    tryLoadImage(frame, d.brand, r.filename, r.year);
+  // Zoom the x-axis to this brand's own year span (padded) instead of the
+  // full historical range, so its versions spread across nearly the whole
+  // width rather than being squeezed into whatever sliver of the timeline
+  // they actually span — the whole point of "exploding" is to make the
+  // history fill the view.
+  const years = rows.map(r => r.year);
+  const yrMin = d3.min(years), yrMax = d3.max(years);
+  const span = Math.max(yrMax - yrMin, 6);
+  const pad = Math.max(2, Math.round(span * 0.18));
+  setXScale([yrMin - pad, yrMax + pad]);
+  drawAxis();
+
+  explodeNodes = rows.map((r, i) => ({
+    brand: d.brand,
+    industry: d.industry,
+    year: r.year,
+    filename: r.filename,
+    changeScore: r.change_score,
+    isFirst: i === 0,
+    r: EXPLODE_R,
+    targetX: xScale(r.year),
+    targetY: scoreScale(clampToScoreDomain(edgeDensityZ(r.edge_density))),
+    x: 0, y: 0,
+  }));
+
+  runExplodeSim();
+  gDots.classed("explore-hidden", true);
+  renderExplodeNodes(origin);
+  updateBackButton();
+}
+
+function runExplodeSim() {
+  if (explodeSim) explodeSim.stop();
+  // x is pinned to the real year (fx) so the timeline stays accurate — all
+  // collision resolution among nearby-year versions happens on y instead,
+  // which has plenty of room now that the collapsed dot plot is hidden.
+  // tiny random offset so nodes whose target y values are nearly identical
+  // (e.g. two versions with very similar complexity) don't start the
+  // simulation exactly on top of each other, which can trap the collision
+  // force with no clear direction to push them apart
+  explodeNodes.forEach(n => { n.x = n.targetX; n.fx = n.targetX; n.y = n.targetY + (Math.random() - 0.5) * 4; });
+
+  // Plot-edge containment has to run as a force *during* the simulation,
+  // not a clamp applied afterward — clamping post-hoc can collapse multiple
+  // nodes that the collision force had already separated (but pushed past
+  // the edge) onto the exact same boundary value, undoing the separation.
+  function boundsForce() {
+    for (const n of explodeNodes) {
+      const top = margin.top + n.r, bottom = height - margin.bottom - n.r;
+      if (n.y < top) n.y += (top - n.y) * 0.3;
+      else if (n.y > bottom) n.y -= (n.y - bottom) * 0.3;
+    }
+  }
+
+  explodeSim = d3.forceSimulation(explodeNodes)
+    .force("y", d3.forceY(n => n.targetY).strength(0.22))
+    .force("collide", d3.forceCollide(n => n.r + 6).iterations(4))
+    .force("bounds", boundsForce)
+    .alphaDecay(0.02)
+    .stop();
+
+  for (let i = 0; i < 400; i++) explodeSim.tick();
+
+  assignLabelSides(explodeNodes);
+}
+
+// The year label defaults to sitting just below each circle. When another
+// circle has settled close enough beneath to collide with that label (e.g.
+// two versions land near each other after collision resolution), flip the
+// label above instead.
+// Greedy label placement: for each node (processed left-to-right), try a
+// handful of candidate spots around its circle — straight below, straight
+// above, then below/above nudged sideways — and take the first one that
+// clashes with neither another circle nor an already-placed label. Plain
+// above/below isn't enough once three-plus circles crowd close together
+// (e.g. Applebee's 1980–85), since freeing one label from one neighbor can
+// just walk it into another; the sideways options give it more escape routes.
+function assignLabelSides(list) {
+  const LABEL_HALF_W = 22, LABEL_HALF_H = 9;
+
+  function candidatesFor(n) {
+    const sideShift = n.r * 0.85;
+    const belowDy = n.r + 20, aboveDy = -(n.r + 14);
+    return [
+      { dx: 0, dy: belowDy, above: false },
+      { dx: 0, dy: aboveDy, above: true },
+      { dx: sideShift, dy: belowDy, above: false },
+      { dx: -sideShift, dy: belowDy, above: false },
+      { dx: sideShift, dy: aboveDy, above: true },
+      { dx: -sideShift, dy: aboveDy, above: true },
+    ];
+  }
+
+  const placed = [];
+
+  function collidesAt(absX, absY, exclude) {
+    const hitsCircle = list.some(o => o !== exclude &&
+      Math.abs(o.x - absX) < o.r + LABEL_HALF_W &&
+      Math.abs(o.y - absY) < o.r + LABEL_HALF_H);
+    if (hitsCircle) return true;
+    return placed.some(p => Math.abs(p.x - absX) < LABEL_HALF_W * 2 && Math.abs(p.y - absY) < LABEL_HALF_H * 2);
+  }
+
+  list.slice().sort((a, b) => a.x - b.x).forEach(n => {
+    const cands = candidatesFor(n);
+    let chosen = cands[0];
+    for (const c of cands) {
+      if (!collidesAt(n.x + c.dx, n.y + c.dy, n)) { chosen = c; break; }
+    }
+    n.labelAbove = chosen.above;
+    n.labelDx = chosen.dx;
+    n.labelDy = chosen.dy;
+    placed.push({ x: n.x + chosen.dx, y: n.y + chosen.dy });
   });
-
-  setupTimelineNav(content.querySelector(".timeline-wrap"));
-  positionPopover(d);
 }
 
-function setupTimelineNav(wrap) {
-  const strip = wrap.querySelector("#timeline-strip");
-  const prevBtn = wrap.querySelector(".strip-nav.prev");
-  const nextBtn = wrap.querySelector(".strip-nav.next");
-  const fadeLeft = wrap.querySelector(".edge-fade.left");
-  const fadeRight = wrap.querySelector(".edge-fade.right");
-  const STEP = 188;
+function renderExplodeNodes(origin) {
+  gExplodeLines.selectAll("*").remove();
+  gExplodeDots.selectAll("*").remove();
 
-  function update() {
-    const overflow = strip.scrollWidth > strip.clientWidth + 2;
-    const atStart = strip.scrollLeft <= 2;
-    const atEnd = strip.scrollLeft >= strip.scrollWidth - strip.clientWidth - 2;
-    prevBtn.style.display = overflow ? "flex" : "none";
-    nextBtn.style.display = overflow ? "flex" : "none";
-    prevBtn.style.opacity = atStart ? "0.35" : "1";
-    nextBtn.style.opacity = atEnd ? "0.35" : "1";
-    fadeLeft.style.opacity = (overflow && !atStart) ? "1" : "0";
-    fadeRight.style.opacity = (overflow && !atEnd) ? "1" : "0";
-  }
+  const linePath = d3.line().x(n => n.x).y(n => n.y).curve(d3.curveCatmullRom.alpha(0.6));
+  gExplodeLines.append("path")
+    .attr("class", "explode-path")
+    .attr("d", linePath(explodeNodes))
+    .style("opacity", 0)
+    .transition().duration(500).delay(150).style("opacity", 1);
 
-  prevBtn.onclick = (event) => { event.stopPropagation(); strip.scrollBy({ left: -STEP, behavior: "smooth" }); };
-  nextBtn.onclick = (event) => { event.stopPropagation(); strip.scrollBy({ left: STEP, behavior: "smooth" }); };
-  strip.addEventListener("scroll", update);
-  requestAnimationFrame(update);
-  setTimeout(update, 150); // re-check once logo images have finished loading and laid out
+  const groups = gExplodeDots.selectAll("g.explode-node")
+    .data(explodeNodes)
+    .enter()
+    .append("g")
+    .attr("class", "explode-node")
+    .attr("transform", `translate(${origin.x},${origin.y})`);
 
-  activeTimelineStrip = { strip, step: STEP };
+  groups.append("clipPath")
+    .attr("id", (d, i) => `explode-clip-${i}`)
+    .append("circle").attr("r", EXPLODE_R);
+
+  groups.append("circle")
+    .attr("class", "explode-bg")
+    .attr("r", EXPLODE_R)
+    .attr("fill", "var(--card-bg)");
+
+  groups.append("image")
+    .attr("class", "explode-logo")
+    .attr("clip-path", (d, i) => `url(#explode-clip-${i})`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .attr("width", EXPLODE_R * 1.7)
+    .attr("height", EXPLODE_R * 1.7)
+    .attr("x", -EXPLODE_R * 0.85)
+    .attr("y", -EXPLODE_R * 0.85)
+    .attr("href", d => `logos/${encodeURIComponent(d.brand)}/${encodeURIComponent(d.filename)}`)
+    .on("error", function () { d3.select(this).style("opacity", 0); });
+
+  // on top of the image (not behind it, like explode-bg) so the ring's inner
+  // edge isn't undercut by the clipped logo's own edge pixels
+  groups.append("circle")
+    .attr("class", "explode-ring")
+    .attr("r", EXPLODE_R)
+    .attr("fill", "none")
+    .attr("stroke", ACCENT)
+    .attr("stroke-width", 4);
+
+  groups.append("text")
+    .attr("class", "explode-year")
+    .attr("x", d => d.labelDx)
+    .attr("y", d => d.labelDy)
+    .attr("text-anchor", "middle")
+    .text(d => d.year);
+
+  groups
+    .on("mousemove", (event, d) => showExplodeTooltip(event, d))
+    .on("mouseleave", hideTooltip)
+    .on("click", (event) => { event.stopPropagation(); closeExplode(); });
+
+  groups.transition()
+    .duration(600)
+    .ease(d3.easeCubicOut)
+    .attr("transform", d => `translate(${d.x},${d.y})`);
 }
 
-function positionPopover(d) {
-  const popover = document.getElementById("popover");
-  const wrap = document.getElementById("chart-wrap");
-  const wrapRect = wrap.getBoundingClientRect();
-  const POP_WIDTH = 460;
-  const MARGIN = 14;
-  const GAP = 24; // gap from the right edge of the chart box, so the popover doesn't sit on top of it
-
-  popover.scrollTop = 0;
-  popover.style.width = POP_WIDTH + "px";
-
-  // anchor in viewport coordinates (d.x/d.y are chart-local, 1:1 with rendered px)
-  const anchorVY = wrapRect.top + d.y;
-
-  const popH = popover.scrollHeight || 300;
-
-  // always open just to the right of the whole chart box, so it never covers it
-  let leftV = wrapRect.right + GAP;
-  leftV = Math.min(leftV, window.innerWidth - POP_WIDTH - MARGIN);
-  leftV = Math.max(MARGIN, leftV);
-
-  let topV = anchorVY - popH / 2;
-  topV = Math.max(MARGIN, Math.min(window.innerHeight - popH - MARGIN, topV));
-
-  // popover is a body-level element positioned in the document, so add scroll offsets
-  popover.style.left = (leftV + window.scrollX) + "px";
-  popover.style.top = (topV + window.scrollY) + "px";
-  popover.style.transformOrigin = `0px ${anchorVY - topV}px`;
-
-  popover.classList.add("open");
+function showExplodeTooltip(event, d) {
+  const tt = d3.select("#tooltip");
+  const changeLine = d.isFirst
+    ? "first known version"
+    : `${d.changeScore > 0 ? "+" : ""}${(d.changeScore ?? 0).toFixed(2)} complexity`;
+  tt.html(
+    `<div class="t-brand">${d.brand} · ${d.year}</div>` +
+    `<div class="t-sub">${changeLine}</div>`
+  );
+  tt.classed("visible", true)
+    .style("left", (event.clientX + 16) + "px")
+    .style("top", (event.clientY + 12) + "px");
 }
 
-function closePanel() {
-  document.getElementById("popover").classList.remove("open");
-  activeTimelineStrip = null;
+function updateBackButton() {
+  d3.select("#explode-back").classed("visible", !!explodedBrand);
 }
 
-document.getElementById("popover-close").addEventListener("click", (event) => {
+function closeExplode() {
+  if (!explodedBrand) return;
+  explodedBrand = null;
+
+  setXScale(baseXDomain());
+  drawAxis();
+
+  gExplodeDots.selectAll("g.explode-node")
+    .transition().duration(280)
+    .style("opacity", 0)
+    .remove();
+
+  gExplodeLines.selectAll(".explode-path")
+    .transition().duration(200)
+    .style("opacity", 0)
+    .remove();
+
+  gDots.classed("explore-hidden", false);
+
+  updateBackButton();
+}
+
+document.getElementById("explode-back").addEventListener("click", (event) => {
   event.stopPropagation();
-  closePanel();
+  closeExplode();
 });
 
-document.addEventListener("click", (event) => {
-  const popover = document.getElementById("popover");
-  if (!popover.classList.contains("open")) return;
-  if (popover.contains(event.target)) return;
-  closePanel();
-});
-
-document.addEventListener("keydown", (event) => {
-  if (!activeTimelineStrip) return;
-  if (event.key === "ArrowLeft") {
-    event.preventDefault();
-    activeTimelineStrip.strip.scrollBy({ left: -activeTimelineStrip.step, behavior: "smooth" });
-  } else if (event.key === "ArrowRight") {
-    event.preventDefault();
-    activeTimelineStrip.strip.scrollBy({ left: activeTimelineStrip.step, behavior: "smooth" });
-  }
+document.addEventListener("click", () => {
+  if (!explodedBrand) return;
+  closeExplode();
 });
 
 Promise.all([
@@ -872,6 +942,10 @@ Promise.all([
     timelinesByBrand.get(r.brand).push(r);
   });
 
+  computeEdgeDensityStats(timelines);
+  const earliestYear = d3.min(timelines, r => r.year);
+  axisStartYear = Math.floor(earliestYear / 5) * 5;
+
   buildFilters();
   measureWidth();
   buildScale(summary);
@@ -882,12 +956,12 @@ Promise.all([
   updateFocusState();
 
   window.addEventListener("resize", () => {
-    closePanel();
+    closeExplode();
     measureWidth();
     buildScale(summary);
     drawAxis();
     simulation.force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1));
-    simulation.force("x", d3.forceX(() => centerX).strength(0.04));
+    simulation.force("x", d3.forceX(() => presentCenterX).strength(0.06));
     simulation.alpha(0.6).restart();
   });
 }).catch(err => {

@@ -266,7 +266,7 @@
   /* ---- Rebrands by decade ---- */
 
   .decades-widget {
-    max-width: 1400px;
+    max-width: 1100px;
     margin: 8px auto 40px;
     padding: 0 24px;
   }
@@ -279,25 +279,32 @@
     z-index: 5;
   }
 
-  .decades-filters {
+  .decades-layout {
     display: flex;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 28px;
+  }
+
+  .decades-sidebar {
+    flex: none;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
-    margin-bottom: 8px;
   }
 
   .decades-filter-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
     background: #ffffff;
     border: 1px solid #e2e2dd;
     color: #6b6b67;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
-    padding: 7px 12px;
+    padding: 9px 14px;
     border-radius: 10px;
     cursor: pointer;
+    text-align: left;
     transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
   }
 
@@ -312,161 +319,186 @@
     color: #1c1c1a;
   }
 
-  .decades-filter-note {
-    font-size: 12.5px;
-    color: #9a9a95;
-    margin: 0 0 14px;
-  }
-
-  .decade-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 14px;
-    height: 160px;
-    border-bottom: 1px solid #e6e5e0;
-    padding-bottom: 2px;
-  }
-
-  .decade-bar-col {
+  .decades-panel {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: 100%;
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: inherit;
-    cursor: pointer;
+    min-width: 0;
+    background: #f7f7f4;
+    border-radius: 16px;
+    padding: 26px 30px;
   }
 
-  .decade-bar-count {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1c1c1a;
-    margin-bottom: 6px;
+  .decades-hint {
+    max-height: 46px;
+    opacity: 1;
+    overflow: hidden;
+    transition: opacity 220ms ease, max-height 220ms ease, margin 220ms ease;
+    margin: 0 0 16px;
   }
 
-  .decade-bar {
-    width: 100%;
-    max-width: 64px;
-    background: #d7d5cf;
-    border-radius: 5px 5px 0 0;
-    transition: background 300ms ease;
+  .decades-hint p {
+    margin: 0 0 3px;
+    font-size: 13.5px;
+    color: #4a4a46;
   }
 
-  .decade-bar-col.active .decade-bar {
-    background: #1c1c1a;
+  .decades-hint p.decades-hint-sub {
+    font-size: 12px;
+    color: #9a9a95;
   }
 
-  .decade-bar-label {
-    font-size: 12.5px;
-    color: #6b6b67;
-    margin-top: 8px;
-  }
-
-  .decade-bar-col.active .decade-bar-label {
-    color: #1c1c1a;
-    font-weight: 700;
-  }
-
-  .decade-blocks {
-    padding-top: 8px;
+  .decades-panel.has-active .decades-hint {
+    opacity: 0;
+    max-height: 0;
+    margin: 0;
   }
 
   /*
-   * Each block is a fixed height, always — opening/closing its drawer never
-   * changes that footprint. This matters beyond visual stability: Scrollama
-   * caches every step's trigger position at setup, and only recalculates on
-   * viewport resize, not on content-driven layout shifts. If a block's
-   * height changed when its drawer opened, every later block would shift
-   * down, silently invalidating their cached trigger points — steps would
-   * get skipped entirely on scroll. Cards that don't fit scroll internally
-   * within the drawer instead of growing the page.
+   * Every decade row is always mounted, whether collapsed (34px bar) or
+   * expanded (50vh drawer) — this is an accordion, not a show/hide toggle.
+   * That means the panel's total height only ever takes two values: "all six
+   * collapsed" (macro) or "five collapsed + one expanded" (any decade open) —
+   * switching WHICH decade is expanded never changes the total, since it's
+   * always exactly one. This area sits ahead of the invisible step track that
+   * drives Scrollama, which caches each step's trigger position at setup and
+   * only recalculates on viewport resize, not content-driven layout shifts —
+   * so a single resize() after the one-time macro-to-open transition is
+   * enough; no further calls are needed once a decade is active.
    */
-  .decade-block {
-    height: 78vh;
+  .decade-bars {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+  }
+
+  .decade-bar-row {
+    display: grid;
+    grid-template-columns: 58px 1fr 34px;
+    align-items: start;
+    gap: 12px;
+    padding: 4px 0;
+    cursor: pointer;
+  }
+
+  .decade-bar-label {
+    font-size: 13.5px;
+    color: #3a3a37;
     padding-top: 8px;
-    border-top: 1px dashed #e6e5e0;
   }
 
-  .decade-block:first-child {
-    border-top: none;
-  }
-
-  .decade-drawer-heading {
-    flex: none;
-    font-size: 15px;
+  .decade-bar-row.active .decade-bar-label {
     font-weight: 700;
     color: #1c1c1a;
-    padding: 20px 0 4px;
   }
 
-  .decade-drawer-outer {
-    flex: 1;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 400ms ease;
+  .decade-bar-track {
+    position: relative;
+    height: 34px;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: height 480ms ease;
   }
 
-  .decade-drawer-outer.is-open {
-    grid-template-rows: 1fr;
-  }
-
-  .decade-drawer-inner {
+  .decade-bar-row.active .decade-bar-track {
+    height: 50vh;
     overflow-y: auto;
-    min-height: 0;
   }
 
-  .decade-card-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    padding: 12px 0 24px;
+  .decade-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: #d7d5cf;
+    border-radius: 6px;
+    transition: opacity 200ms ease, background 160ms ease;
   }
 
-  @media (max-width: 900px) {
-    .decade-card-grid { grid-template-columns: repeat(2, 1fr); }
+  .decade-bar-row:hover .decade-bar-fill {
+    background: #c9c7bf;
   }
 
-  @media (max-width: 560px) {
-    .decade-card-grid { grid-template-columns: 1fr; }
+  .decade-bar-row.active .decade-bar-fill {
+    opacity: 0;
+    pointer-events: none;
   }
 
-  .decade-card {
-    border: 1px solid #e6e5e0;
-    border-radius: 10px;
-    padding: 12px;
-    background: #ffffff;
+  .decade-bar-count {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1c1c1a;
+    text-align: right;
+    padding-top: 8px;
+    transition: opacity 200ms ease;
   }
 
-  .decade-pair-wrap {
-    text-align: center;
+  .decade-bar-row.active .decade-bar-count {
+    opacity: 0;
   }
 
-  .decade-pair {
+  .decade-year-list-wrap {
+    position: relative;
+    padding: 16px 18px;
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .decade-bar-row.active .decade-year-list-wrap {
+    opacity: 1;
+  }
+
+  .decade-year-list-wrap.is-swapping {
+    opacity: 0;
+  }
+
+  .decade-year-list {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .decade-year-row {
     display: flex;
     align-items: center;
-    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .decade-year-label {
+    flex: none;
+    width: 42px;
+    font-size: 13px;
+    color: #6b6b67;
+  }
+
+  .decade-year-events {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .decade-year-card {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 2px rgba(20, 20, 10, 0.08);
   }
 
   .decade-logo {
-    flex: 1;
-    min-width: 0;
-    height: 80px;
+    flex: none;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .decade-logo img {
-    max-width: 100%;
-    max-height: 80px;
+    max-width: 90px;
+    max-height: 34px;
     width: auto;
     height: auto;
     object-fit: contain;
@@ -474,61 +506,49 @@
 
   .decade-logo.placeholder {
     background: #f2f2ee;
-    border-radius: 6px;
-    width: 100%;
+    border-radius: 4px;
+    width: 70px;
     height: 100%;
   }
 
   .decade-arrow {
-    flex: none;
     color: #9a9a95;
-    font-size: 16px;
+    font-size: 14px;
   }
 
-  .decade-year {
-    font-size: 12.5px;
-    color: #6b6b67;
-    margin-top: 8px;
+  .decade-steps {
+    padding-top: 8px;
   }
 
-  .decade-more-link {
-    display: block;
-    width: 100%;
-    background: none;
-    border: none;
-    text-align: center;
-    font-size: 12px;
-    color: #2563EB;
-    cursor: pointer;
-    padding: 8px 0 0;
-    font-family: inherit;
+  /*
+   * Sits before the real .decade-step elements and is deliberately NOT
+   * matched by Scrollama's ".decade-step" selector. Without it, the 1970s
+   * step's trigger point can already be past Scrollama's 0.5 viewport-center
+   * offset the moment the sticky panel finishes pinning (the panel eats a
+   * few hundred px off the top of the viewport, which Scrollama's simple
+   * center-of-viewport math doesn't know about) — so the widget appeared to
+   * snap straight to "1970s expanded" instead of showing the plain bar list
+   * first. This buffer guarantees a full extra scroll of macro-bars-only
+   * viewing before the first decade can activate.
+   */
+  .decade-lead-in {
+    height: 50vh;
   }
 
-  .decade-more-wrap {
-    display: none;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #e6e5e0;
+  .decade-step {
+    height: 50vh;
   }
 
-  .decade-more-wrap.is-open {
-    display: flex;
-  }
+  @media (max-width: 720px) {
+    .decades-layout {
+      flex-direction: column;
+    }
 
-  .decade-pair-sub .decade-logo {
-    height: 56px;
-  }
-
-  .decade-pair-sub .decade-logo img {
-    max-height: 56px;
-  }
-
-  .decade-empty {
-    font-size: 13px;
-    color: #9a9a95;
-    padding: 12px 0 24px;
+    .decades-sidebar {
+      width: 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
   }
 </style>
 </head>
@@ -642,14 +662,25 @@
   <iframe src="hue-chart.html" title="Hue families explorer"></iframe>
 </div>
 
-<h2 class="section-heading">Rebrands By Decade</h2>
+<div class="story">
+  <p>If you&rsquo;ve taken a look at the details of the actual color evolution over time, however, you&rsquo;ll notice it doesn&rsquo;t just fade to black and white immediately. There&rsquo;s a plethora of societal changes driving these design shifts. It might be worth taking a look at what specific 10-year periods incurred the most changes.</p>
+</div>
+
+<h2 class="section-heading">Logo Changes, by Year</h2>
 <div class="decades-widget" id="decades-widget">
   <div class="decades-sticky">
-    <div class="decades-filters" id="decades-filters"></div>
-    <p class="decades-filter-note">Bar heights show all industries. Cards filter to selected industry.</p>
-    <div class="decade-bars" id="decade-bars"></div>
+    <div class="decades-layout">
+      <div class="decades-sidebar" id="decades-filters"></div>
+      <div class="decades-panel" id="decades-panel">
+        <div class="decades-hint">
+          <p>Click a bar to see the specific changes within that year!</p>
+          <p class="decades-hint-sub">Bar length shows all industries. Cards filter to the selected industry.</p>
+        </div>
+        <div class="decade-bars" id="decade-bars"></div>
+      </div>
+    </div>
   </div>
-  <div class="decade-blocks" id="decade-blocks"></div>
+  <div class="decade-steps" id="decade-steps"></div>
 </div>
 
 <script>
@@ -695,7 +726,7 @@
   let activeIndustry = "all";
   let activeDecade = null;
   let scroller = null;
-  let resizeTimer = null;
+  let suppressStepEnter = false;
   const changesByDecade = new Map(DECADES.map(d => [d, []]));
 
   function decadeOf(year) {
@@ -721,113 +752,118 @@
     return box;
   }
 
-  function buildPair(brand, ev, isSub) {
-    const wrap = document.createElement("div");
-    wrap.className = "decade-pair-wrap";
+  function buildYearCard(ev) {
+    const card = document.createElement("div");
+    card.className = "decade-year-card";
+    card.appendChild(buildLogo(ev.brand, ev.before.filename));
 
-    const row = document.createElement("div");
-    row.className = "decade-pair" + (isSub ? " decade-pair-sub" : "");
-    row.appendChild(buildLogo(brand, ev.before.filename));
-
-    const arrow = document.createElement("div");
+    const arrow = document.createElement("span");
     arrow.className = "decade-arrow";
     arrow.textContent = "→";
-    row.appendChild(arrow);
+    card.appendChild(arrow);
 
-    row.appendChild(buildLogo(brand, ev.after.filename));
-    wrap.appendChild(row);
-
-    const year = document.createElement("div");
-    year.className = "decade-year";
-    year.textContent = ev.year;
-    wrap.appendChild(year);
-
-    return wrap;
-  }
-
-  function buildCard(brand, primary, extra) {
-    const card = document.createElement("div");
-    card.className = "decade-card";
-    card.appendChild(buildPair(brand, primary, false));
-
-    if (extra.length) {
-      const moreWrap = document.createElement("div");
-      moreWrap.className = "decade-more-wrap";
-      extra.forEach(ev => moreWrap.appendChild(buildPair(brand, ev, true)));
-
-      const label = n => `${n} more version${n === 1 ? "" : "s"} this decade →`;
-      const link = document.createElement("button");
-      link.type = "button";
-      link.className = "decade-more-link";
-      link.textContent = label(extra.length);
-      link.addEventListener("click", () => {
-        const opening = !moreWrap.classList.contains("is-open");
-        moreWrap.classList.toggle("is-open", opening);
-        link.textContent = opening ? "Show less" : label(extra.length);
-      });
-
-      card.appendChild(link);
-      card.appendChild(moreWrap);
-    }
-
+    card.appendChild(buildLogo(ev.brand, ev.after.filename));
     return card;
   }
 
-  function renderDecadeCards(decade) {
-    const container = document.getElementById(`decade-cards-${decade}`);
-    if (!container) return;
-
+  function buildYearListFor(decade) {
+    const startYear = parseInt(decade, 10);
+    const endYear = Math.min(startYear + 10, new Date().getFullYear() + 1);
     const events = changesByDecade.get(decade).filter(
       e => activeIndustry === "all" || e.industry === activeIndustry
     );
 
-    const byBrand = new Map();
+    const byYear = new Map();
     events.forEach(e => {
-      if (!byBrand.has(e.brand)) byBrand.set(e.brand, []);
-      byBrand.get(e.brand).push(e);
+      if (!byYear.has(e.year)) byYear.set(e.year, []);
+      byYear.get(e.year).push(e);
     });
 
-    const cards = [...byBrand.entries()].map(([brand, evs]) => {
-      const sorted = evs.slice().sort((a, b) => b.changeScore - a.changeScore);
-      const extra = sorted.slice(1).sort((a, b) => a.year - b.year);
-      return { brand, primary: sorted[0], extra };
-    });
-    cards.sort((a, b) => b.primary.changeScore - a.primary.changeScore);
+    const list = document.createElement("div");
+    list.className = "decade-year-list";
 
-    container.innerHTML = "";
-    if (!cards.length) {
-      const empty = document.createElement("p");
-      empty.className = "decade-empty";
-      empty.textContent = `No changes for this industry in the ${decade}.`;
-      container.appendChild(empty);
-      return;
+    for (let y = startYear; y < endYear; y++) {
+      const row = document.createElement("div");
+      row.className = "decade-year-row";
+
+      const label = document.createElement("div");
+      label.className = "decade-year-label";
+      label.textContent = y;
+      row.appendChild(label);
+
+      const evWrap = document.createElement("div");
+      evWrap.className = "decade-year-events";
+      (byYear.get(y) || []).forEach(ev => evWrap.appendChild(buildYearCard(ev)));
+      row.appendChild(evWrap);
+
+      list.appendChild(row);
     }
-    cards.forEach(({ brand, primary, extra }) => container.appendChild(buildCard(brand, primary, extra)));
+
+    return list;
   }
 
-  function renderAllCards() {
-    DECADES.forEach(renderDecadeCards);
+  // buildYearListFor() does real DOM work (createElement per card/logo) — on
+  // repeat visits to the same decade+industry combo, reuse what was already
+  // built instead of redoing it. Keeps the expand interaction snappy since
+  // this work no longer has to happen synchronously mid-transition every time.
+  const yearListCache = new Map();
+  function getYearListFor(decade) {
+    const key = decade + "::" + activeIndustry;
+    if (!yearListCache.has(key)) {
+      yearListCache.set(key, buildYearListFor(decade));
+    }
+    return yearListCache.get(key).cloneNode(true);
+  }
+
+  // Fills a decade row's own drawer with fresh content. A row opening for the
+  // first time has nothing to fade out, so it renders immediately rather than
+  // waiting through the swap delay — that wait was stacking on top of the
+  // click's scroll animation and the track's own height transition, which is
+  // what made clicking a bar feel laggy compared to just scrolling to it.
+  function renderYearList(decade) {
+    const row = document.querySelector(`.decade-bar-row[data-decade="${decade}"]`);
+    const wrap = row.querySelector(".decade-year-list-wrap");
+    if (wrap.childElementCount === 0) {
+      wrap.appendChild(getYearListFor(decade));
+      return;
+    }
+    wrap.classList.add("is-swapping");
+    window.setTimeout(() => {
+      wrap.innerHTML = "";
+      wrap.appendChild(getYearListFor(decade));
+      wrap.classList.remove("is-swapping");
+    }, 200);
   }
 
   function setActiveDecade(decade) {
     if (decade === activeDecade) return;
+    const isFirstOpen = activeDecade === null;
     activeDecade = decade;
-    document.querySelectorAll(".decade-bar-col").forEach(el => {
-      el.classList.toggle("active", el.dataset.decade === decade);
-    });
-    document.querySelectorAll(".decade-drawer-outer").forEach(el => {
-      el.classList.toggle("is-open", el.dataset.decade === decade);
+
+    document.getElementById("decades-panel").classList.add("has-active");
+
+    document.querySelectorAll(".decade-bar-row").forEach(row => {
+      row.classList.toggle("active", row.dataset.decade === decade);
     });
 
-    // Opening/closing a drawer changes every later block's position on the
-    // page (the CSS grid height transition pushes them down/up), which
-    // leaves Scrollama's cached step offsets stale — its automatic resize
-    // handling only covers viewport resize, not content-driven layout
-    // shifts like this. Recalculate once the 400ms transition has settled.
-    if (scroller) {
-      window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => scroller.resize(), 450);
+    renderYearList(decade);
+
+    if (isFirstOpen) {
+      // The one collapsed-row -> expanded-drawer transition is the only time
+      // the panel's total height ever changes. Recalculate Scrollama's step
+      // positions once it settles — after this, total height is constant
+      // (exactly one row is always expanded), so no further resize is needed.
+      window.setTimeout(() => { if (scroller) scroller.resize(); }, 500);
     }
+  }
+
+  function onIndustryChange() {
+    document.querySelectorAll(".decade-bar-row").forEach(row => {
+      if (row.dataset.decade !== activeDecade) {
+        row.querySelector(".decade-year-list-wrap").innerHTML = "";
+      }
+    });
+    if (activeDecade) renderYearList(activeDecade);
   }
 
   function buildBars() {
@@ -836,65 +872,72 @@
 
     DECADES.forEach(decade => {
       const count = changesByDecade.get(decade).length;
-      const col = document.createElement("button");
-      col.type = "button";
-      col.className = "decade-bar-col";
-      col.dataset.decade = decade;
+      const row = document.createElement("div");
+      row.className = "decade-bar-row";
+      row.dataset.decade = decade;
 
-      const countEl = document.createElement("div");
-      countEl.className = "decade-bar-count";
-      countEl.textContent = count;
-
-      const bar = document.createElement("div");
-      bar.className = "decade-bar";
-      bar.style.height = `${Math.max(6, (count / maxCount) * 130)}px`;
-
-      const label = document.createElement("div");
+      const label = document.createElement("span");
       label.className = "decade-bar-label";
       label.textContent = decade;
 
-      col.appendChild(countEl);
-      col.appendChild(bar);
-      col.appendChild(label);
+      const track = document.createElement("span");
+      track.className = "decade-bar-track";
 
-      col.addEventListener("click", () => {
-        document.getElementById(`decade-block-${decade}`)
+      const fill = document.createElement("span");
+      fill.className = "decade-bar-fill";
+      fill.style.width = `${Math.max(4, (count / maxCount) * 100)}%`;
+      track.appendChild(fill);
+
+      const yearListWrap = document.createElement("div");
+      yearListWrap.className = "decade-year-list-wrap";
+      track.appendChild(yearListWrap);
+
+      const countEl = document.createElement("span");
+      countEl.className = "decade-bar-count";
+      countEl.textContent = count;
+
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(countEl);
+
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".decade-year-list-wrap")) return;
+        // Expand immediately on click rather than waiting for Scrollama to
+        // detect the scroll has settled — that round-trip was the main
+        // source of felt lag. The smooth scroll below just brings the row
+        // into view alongside the expansion, it no longer gates it.
+        setActiveDecade(decade);
+
+        // The sticky panel eats part of the viewport that scrollIntoView's
+        // own centering math doesn't know about, so Scrollama can end up
+        // detecting a neighboring step as the smooth scroll passes over it —
+        // overriding the decade we just correctly opened. Suppress step
+        // detection until the scroll actually settles so the click's own
+        // choice wins.
+        suppressStepEnter = true;
+        const clearSuppress = () => { suppressStepEnter = false; };
+        window.addEventListener("scrollend", clearSuppress, { once: true });
+        window.setTimeout(clearSuppress, 1200);
+
+        document.getElementById(`decade-step-${decade}`)
           .scrollIntoView({ behavior: "smooth", block: "center" });
       });
 
-      barsEl.appendChild(col);
+      barsEl.appendChild(row);
     });
   }
 
-  function buildBlocks() {
-    const blocksEl = document.getElementById("decade-blocks");
-
+  function buildSteps() {
+    const stepsEl = document.getElementById("decade-steps");
+    const leadIn = document.createElement("div");
+    leadIn.className = "decade-lead-in";
+    stepsEl.appendChild(leadIn);
     DECADES.forEach(decade => {
-      const block = document.createElement("div");
-      block.className = "decade-block";
-      block.id = `decade-block-${decade}`;
-      block.dataset.decade = decade;
-
-      const heading = document.createElement("div");
-      heading.className = "decade-drawer-heading";
-      heading.textContent = decade;
-
-      const outer = document.createElement("div");
-      outer.className = "decade-drawer-outer";
-      outer.dataset.decade = decade;
-
-      const inner = document.createElement("div");
-      inner.className = "decade-drawer-inner";
-
-      const grid = document.createElement("div");
-      grid.className = "decade-card-grid";
-      grid.id = `decade-cards-${decade}`;
-
-      inner.appendChild(grid);
-      outer.appendChild(inner);
-      block.appendChild(heading);
-      block.appendChild(outer);
-      blocksEl.appendChild(block);
+      const step = document.createElement("div");
+      step.className = "decade-step";
+      step.id = `decade-step-${decade}`;
+      step.dataset.decade = decade;
+      stepsEl.appendChild(step);
     });
   }
 
@@ -914,7 +957,7 @@
         document.querySelectorAll(".decades-filter-btn").forEach((el, i) => {
           el.classList.toggle("active", INDUSTRIES[i].key === key);
         });
-        renderAllCards();
+        onIndustryChange();
       });
 
       wrap.appendChild(btn);
@@ -924,8 +967,11 @@
   function setupObserver() {
     scroller = scrollama();
     scroller
-      .setup({ step: ".decade-block", offset: 0.5 })
-      .onStepEnter(({ element }) => setActiveDecade(element.dataset.decade));
+      .setup({ step: ".decade-step", offset: 0.5 })
+      .onStepEnter(({ element }) => {
+        if (suppressStepEnter) return;
+        setActiveDecade(element.dataset.decade);
+      });
   }
 
   Promise.all([
@@ -960,12 +1006,11 @@
 
     buildFilters();
     buildBars();
-    buildBlocks();
-    renderAllCards();
+    buildSteps();
     setupObserver();
   }).catch(err => {
     console.error("Failed to load decade data", err);
-    document.getElementById("decade-blocks").innerHTML =
+    document.getElementById("decade-bars").innerHTML =
       '<p class="decade-empty">Failed to load data/summary.csv or data/timelines.csv. Serve this folder with `python3 -m http.server 8000` and open it via http://localhost, not file://.</p>';
   });
 })();
