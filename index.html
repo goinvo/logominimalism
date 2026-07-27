@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script src="https://unpkg.com/scrollama@3.2.0/build/scrollama.js"></script>
 <style>
   * { box-sizing: border-box; }
 
@@ -154,14 +153,6 @@
     color: #1c1c1a;
   }
 
-  .current-logo {
-    display: block;
-    width: 100%;
-    max-width: 420px;
-    height: auto;
-    margin: 8px auto 24px;
-  }
-
   .logo-grid {
     display: flex;
     flex-wrap: wrap;
@@ -263,292 +254,77 @@
     color: #6b6b67;
   }
 
-  /* ---- Rebrands by decade ---- */
+  /* ---- Part dividers ---- */
 
-  .decades-widget {
-    max-width: 1100px;
-    margin: 8px auto 40px;
+  .part-card {
+    display: block;
+    width: 100%;
+    max-width: 560px;
+    margin: 56px auto;
+    background: #ffe0c2;
+    border: none;
+    border-radius: 16px;
+    padding: 40px 48px;
+    text-align: center;
+    font-family: inherit;
+    color: #1c1c1a;
+  }
+
+  .part-card h2 {
+    margin: 0 0 18px;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  .part-card ul {
+    display: inline-block;
+    text-align: left;
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .part-card li {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+
+  .part-card li:last-child { margin-bottom: 0; }
+
+  button.part-card {
+    cursor: pointer;
+    transition: box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  button.part-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .part-card-chevron {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #6b5240;
+    transition: transform 200ms ease;
+  }
+
+  .part-card[aria-expanded="true"] .part-card-chevron {
+    transform: rotate(180deg);
+  }
+
+  .part2-embed-wrap {
+    max-width: 1180px;
+    margin: 0 auto 56px;
     padding: 0 24px;
   }
 
-  .decades-sticky {
-    position: sticky;
-    top: 0;
-    background: #ffffff;
-    padding: 16px 0 12px;
-    z-index: 5;
-  }
-
-  .decades-layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 28px;
-  }
-
-  .decades-sidebar {
-    flex: none;
-    width: 220px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .decades-filter-btn {
-    display: flex;
-    align-items: center;
-    background: #ffffff;
+  .part2-embed-wrap iframe {
+    display: block;
+    width: 100%;
+    height: 900px;
     border: 1px solid #e2e2dd;
-    color: #6b6b67;
-    font-size: 13.5px;
-    font-weight: 500;
-    padding: 9px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    text-align: left;
-    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
-  }
-
-  .decades-filter-btn:hover {
-    border-color: #c9c9c2;
-    color: #1c1c1a;
-  }
-
-  .decades-filter-btn.active {
-    background: #f2f2ee;
-    border-color: #1c1c1a;
-    color: #1c1c1a;
-  }
-
-  .decades-panel {
-    flex: 1;
-    min-width: 0;
-    background: #f7f7f4;
     border-radius: 16px;
-    padding: 26px 30px;
-  }
-
-  .decades-hint {
-    max-height: 46px;
-    opacity: 1;
-    overflow: hidden;
-    transition: opacity 220ms ease, max-height 220ms ease, margin 220ms ease;
-    margin: 0 0 16px;
-  }
-
-  .decades-hint p {
-    margin: 0 0 3px;
-    font-size: 13.5px;
-    color: #4a4a46;
-  }
-
-  .decades-hint p.decades-hint-sub {
-    font-size: 12px;
-    color: #9a9a95;
-  }
-
-  .decades-panel.has-active .decades-hint {
-    opacity: 0;
-    max-height: 0;
-    margin: 0;
-  }
-
-  /*
-   * Every decade row is always mounted, whether collapsed (34px bar) or
-   * expanded (50vh drawer) — this is an accordion, not a show/hide toggle.
-   * That means the panel's total height only ever takes two values: "all six
-   * collapsed" (macro) or "five collapsed + one expanded" (any decade open) —
-   * switching WHICH decade is expanded never changes the total, since it's
-   * always exactly one. This area sits ahead of the invisible step track that
-   * drives Scrollama, which caches each step's trigger position at setup and
-   * only recalculates on viewport resize, not content-driven layout shifts —
-   * so a single resize() after the one-time macro-to-open transition is
-   * enough; no further calls are needed once a decade is active.
-   */
-  .decade-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .decade-bar-row {
-    display: grid;
-    grid-template-columns: 58px 1fr 34px;
-    align-items: start;
-    gap: 12px;
-    padding: 4px 0;
-    cursor: pointer;
-  }
-
-  .decade-bar-label {
-    font-size: 13.5px;
-    color: #3a3a37;
-    padding-top: 8px;
-  }
-
-  .decade-bar-row.active .decade-bar-label {
-    font-weight: 700;
-    color: #1c1c1a;
-  }
-
-  .decade-bar-track {
-    position: relative;
-    height: 34px;
-    border-radius: 6px;
-    overflow: hidden;
-    transition: height 480ms ease;
-  }
-
-  .decade-bar-row.active .decade-bar-track {
-    height: 50vh;
-    overflow-y: auto;
-  }
-
-  .decade-bar-fill {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    background: #d7d5cf;
-    border-radius: 6px;
-    transition: opacity 200ms ease, background 160ms ease;
-  }
-
-  .decade-bar-row:hover .decade-bar-fill {
-    background: #c9c7bf;
-  }
-
-  .decade-bar-row.active .decade-bar-fill {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .decade-bar-count {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #1c1c1a;
-    text-align: right;
-    padding-top: 8px;
-    transition: opacity 200ms ease;
-  }
-
-  .decade-bar-row.active .decade-bar-count {
-    opacity: 0;
-  }
-
-  .decade-year-list-wrap {
-    position: relative;
-    padding: 16px 18px;
-    opacity: 0;
-    transition: opacity 260ms ease;
-  }
-
-  .decade-bar-row.active .decade-year-list-wrap {
-    opacity: 1;
-  }
-
-  .decade-year-list-wrap.is-swapping {
-    opacity: 0;
-  }
-
-  .decade-year-list {
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-  }
-
-  .decade-year-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .decade-year-label {
-    flex: none;
-    width: 42px;
-    font-size: 13px;
-    color: #6b6b67;
-  }
-
-  .decade-year-events {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .decade-year-card {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 8px 12px;
-    box-shadow: 0 1px 2px rgba(20, 20, 10, 0.08);
-  }
-
-  .decade-logo {
-    flex: none;
-    height: 34px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .decade-logo img {
-    max-width: 90px;
-    max-height: 34px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-  }
-
-  .decade-logo.placeholder {
-    background: #f2f2ee;
-    border-radius: 4px;
-    width: 70px;
-    height: 100%;
-  }
-
-  .decade-arrow {
-    color: #9a9a95;
-    font-size: 14px;
-  }
-
-  .decade-steps {
-    padding-top: 8px;
-  }
-
-  /*
-   * Sits before the real .decade-step elements and is deliberately NOT
-   * matched by Scrollama's ".decade-step" selector. Without it, the 1970s
-   * step's trigger point can already be past Scrollama's 0.5 viewport-center
-   * offset the moment the sticky panel finishes pinning (the panel eats a
-   * few hundred px off the top of the viewport, which Scrollama's simple
-   * center-of-viewport math doesn't know about) — so the widget appeared to
-   * snap straight to "1970s expanded" instead of showing the plain bar list
-   * first. This buffer guarantees a full extra scroll of macro-bars-only
-   * viewing before the first decade can activate.
-   */
-  .decade-lead-in {
-    height: 50vh;
-  }
-
-  .decade-step {
-    height: 50vh;
-  }
-
-  @media (max-width: 720px) {
-    .decades-layout {
-      flex-direction: column;
-    }
-
-    .decades-sidebar {
-      width: 100%;
-      flex-direction: row;
-      flex-wrap: wrap;
-    }
   }
 </style>
 </head>
@@ -559,7 +335,17 @@
   <img class="panel-img" src="assets/panel3-bland.png" alt="">
   <img class="panel-img" src="assets/panel4-question.png" alt="">
   <img class="panel-img" src="assets/panel5-whats-happening.png" alt="">
+</div>
 
+<div class="part-card">
+  <h2>Part 1: The Logosphere</h2>
+  <ul>
+    <li>How have logos actually changed?</li>
+    <li>Taking a look at 64 logos since 1970</li>
+  </ul>
+</div>
+
+<div class="story">
   <p>When I was a kid, it seemed like everything was bigger, brighter, and more interesting. Or maybe I was just smaller and hadn&rsquo;t seen as much as I have now. Nevertheless, the world is increasingly shifting from color to monotone, from funky design to copy-and-paste houses. The question I want to answer is:</p>
 
   <p class="bold">How (and why) has the world, specifically logos, shifted from interesting to dull?</p>
@@ -578,20 +364,20 @@
   <div class="polaroid-strip-wrap">
     <div class="polaroid-strip" id="polaroid-strip">
       <div class="polaroid-group">
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-parking-1950.jpg" alt=""><figcaption>1950s parking lot</figcaption></figure>
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-parking-2020.jpg" alt=""><figcaption>2020s parking lot</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-parking-1950.jpg" alt=""><figcaption>1950s parking lot: color &amp; variety in cars</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-parking-2020.jpg" alt=""><figcaption>2020s parking lot: a sea of black and white SUVs</figcaption></figure>
       </div>
       <div class="polaroid-group">
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-livingroom-1950.jpg" alt=""><figcaption>1950s living room</figcaption></figure>
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-livingroom-2020.jpg" alt=""><figcaption>2020s living room</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-livingroom-1950.jpg" alt=""><figcaption>1950s living room: warm hues and accent pieces</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-livingroom-2020.jpg" alt=""><figcaption>2020s living room: beige with wood accents</figcaption></figure>
       </div>
       <div class="polaroid-group">
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-mall-1950.jpg" alt=""><figcaption>1950s Burlington Mall in Massachusetts</figcaption></figure>
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-mall-2020.jpg" alt=""><figcaption>2020s Burlington Mall</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-mall-1950.jpg" alt=""><figcaption>1950s Burlington Mall in Massachusetts: plants, seating, and space for community</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-mall-2020.jpg" alt=""><figcaption>2020s Burlington Mall: bleached of warmth and maximized for walking</figcaption></figure>
       </div>
       <div class="polaroid-group">
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-pacsun-1990.jpg" alt=""><figcaption>1990s PacSun</figcaption></figure>
-        <figure class="polaroid"><img src="assets/polaroids/polaroid-pacsun-2020.jpg" alt=""><figcaption>2020s PacSun</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-pacsun-1990.jpg" alt=""><figcaption>1990s PacSun: grungy surf shop</figcaption></figure>
+        <figure class="polaroid"><img src="assets/polaroids/polaroid-pacsun-2020.jpg" alt=""><figcaption>2020s PacSun: looks like every other storefront</figcaption></figure>
       </div>
     </div>
   </div>
@@ -604,36 +390,11 @@
 </div>
 
 <div class="story">
-  <p>Let&rsquo;s look at another example dear to American culture, which made all the Europeans go crazy when they visited for the World Cup: American chain restaurants.</p>
+  <p>The common trend is that we&rsquo;re losing color across all aspects of life. The same thing is happening to logos.</p>
 
-  <p>My childhood favorite was Applebees. Here&rsquo;s the current logo.</p>
+  <p>Let&rsquo;s take a look at some examples dear to American culture, which made all the Europeans go crazy when they visited for the World Cup: American chain restaurants.</p>
 
-  <img class="current-logo" src="logos/Applebees/2017.jpg" alt="">
-
-  <p>Applebees has been through a few changes since their inception in 1980.</p>
-
-  <div class="logo-grid">
-    <figure><img src="logos/Applebees/1980.jpg" alt=""><figcaption>1980</figcaption></figure>
-    <figure><img src="logos/Applebees/1982.png" alt=""><figcaption>1982</figcaption></figure>
-    <figure><img src="logos/Applebees/1983.png" alt=""><figcaption>1983</figcaption></figure>
-    <figure><img src="logos/Applebees/1985.png" alt=""><figcaption>1985</figcaption></figure>
-    <figure><img src="logos/Applebees/2007.jpg" alt=""><figcaption>2007</figcaption></figure>
-    <figure><img src="logos/Applebees/2014.jpg" alt=""><figcaption>2014</figcaption></figure>
-    <figure><img src="logos/Applebees/2017.jpg" alt=""><figcaption>2017</figcaption></figure>
-  </div>
-
-  <p>Visually, Applebee&rsquo;s has greatly simplified. Per our complexity calculation (<span class="what-link">what?</span>), it has a complexity change score of -1.4.</p>
-
-  <p class="bold">How does Applebees&rsquo;s change in complexity stack up against other iconic brands?</p>
-</div>
-
-<h2 class="section-heading">Complexity Change</h2>
-<div class="chart-embed-wrap">
-  <iframe src="chart.html" title="Logo evolution explorer"></iframe>
-</div>
-
-<div class="story">
-  <p>Color palette preferences have also drastically shifted since the 1970s. Continuing with Applebees, here&rsquo;s its 1980 logo color palette versus current day.</p>
+  <p>My childhood favorite was Applebees (it was my first time encountering pink lemonade the size of my head). Taking a look at the complexity and color palette of its first logo in 1980 versus present day, a lot has changed.</p>
 </div>
 
 <div class="palette-compare">
@@ -653,8 +414,75 @@
       <div class="circle" style="background:#3a3938"></div>
       <div class="circle white"></div>
     </div>
-    <figcaption>current day</figcaption>
+    <figcaption>Present</figcaption>
   </figure>
+</div>
+
+<div class="story">
+  <p>Here&rsquo;s a full history of its logos since 1980.</p>
+
+  <div class="logo-grid">
+    <figure><img src="logos/Applebees/1980.jpg" alt=""><figcaption>1980</figcaption></figure>
+    <figure><img src="logos/Applebees/1982.png" alt=""><figcaption>1982</figcaption></figure>
+    <figure><img src="logos/Applebees/1983.png" alt=""><figcaption>1983</figcaption></figure>
+    <figure><img src="logos/Applebees/1985.png" alt=""><figcaption>1985</figcaption></figure>
+    <figure><img src="logos/Applebees/2007.jpg" alt=""><figcaption>2007</figcaption></figure>
+    <figure><img src="logos/Applebees/2014.jpg" alt=""><figcaption>2014</figcaption></figure>
+    <figure><img src="logos/Applebees/2017.jpg" alt=""><figcaption>2017</figcaption></figure>
+  </div>
+
+  <p>This trend of simplification isn&rsquo;t exclusive to Applebees, though, and certainly not the restaurant industry.</p>
+</div>
+
+<div class="palette-compare">
+  <figure class="palette-item">
+    <img src="logos/Taco Bell/1962.png" alt="">
+    <div class="palette-circles">
+      <div class="circle" style="background:#b51a01"></div>
+      <div class="circle" style="background:#234f4b"></div>
+      <div class="circle" style="background:#e68d02"></div>
+      <div class="circle" style="background:#f7cf03"></div>
+    </div>
+    <figcaption>1962</figcaption>
+  </figure>
+  <figure class="palette-item">
+    <img src="logos/Taco Bell/2023.png" alt="">
+    <div class="palette-circles">
+      <div class="circle" style="background:#682a90"></div>
+      <div class="circle" style="background:#9f7fbb"></div>
+      <div class="circle white"></div>
+    </div>
+    <figcaption>Present</figcaption>
+  </figure>
+</div>
+
+<div class="palette-compare">
+  <figure class="palette-item">
+    <img src="logos/Oreo/1960.png" alt="">
+    <div class="palette-circles">
+      <div class="circle" style="background:#0295fc"></div>
+      <div class="circle white"></div>
+    </div>
+    <figcaption>1960</figcaption>
+  </figure>
+  <figure class="palette-item">
+    <img src="logos/Oreo/2001.jpg" alt="">
+    <div class="palette-circles">
+      <div class="circle" style="background:#0d53a3"></div>
+      <div class="circle" style="background:#10a7e4"></div>
+      <div class="circle white"></div>
+    </div>
+    <figcaption>Present</figcaption>
+  </figure>
+</div>
+
+<div class="story">
+  <p>Across different industries and brands, how does the change in complexity and color stack up against each other? Use the tool below to explore!</p>
+</div>
+
+<h2 class="section-heading">Complexity Change</h2>
+<div class="chart-embed-wrap">
+  <iframe src="chart.html" title="Logo evolution explorer"></iframe>
 </div>
 
 <h2 class="section-heading">Color Space</h2>
@@ -662,25 +490,17 @@
   <iframe src="color-wheel.html" title="Color space explorer"></iframe>
 </div>
 
-<div class="story">
-  <p>If you&rsquo;ve taken a look at the details of the actual color evolution over time, however, you&rsquo;ll notice it doesn&rsquo;t just fade to black and white immediately. There&rsquo;s a plethora of societal changes driving these design shifts. It might be worth taking a look at what specific 10-year periods incurred the most changes.</p>
-</div>
+<button class="part-card" id="part2-toggle" type="button" aria-expanded="false" aria-controls="part2-embed-wrap">
+  <h2>Part 2: A Chronological History</h2>
+  <ul>
+    <li>Why were there so many changes in 1990? What happened?</li>
+    <li>A closer look at cultural factors that drove these changes</li>
+  </ul>
+  <span class="part-card-chevron" aria-hidden="true">&#9662;</span>
+</button>
 
-<h2 class="section-heading">Logo Changes, by Year</h2>
-<div class="decades-widget" id="decades-widget">
-  <div class="decades-sticky">
-    <div class="decades-layout">
-      <div class="decades-sidebar" id="decades-filters"></div>
-      <div class="decades-panel" id="decades-panel">
-        <div class="decades-hint">
-          <p>Click a bar to see the specific changes within that year!</p>
-          <p class="decades-hint-sub">Bar length shows all industries. Cards filter to the selected industry.</p>
-        </div>
-        <div class="decade-bars" id="decade-bars"></div>
-      </div>
-    </div>
-  </div>
-  <div class="decade-steps" id="decade-steps"></div>
+<div class="part2-embed-wrap" id="part2-embed-wrap" hidden>
+  <iframe id="part2-iframe" title="Logo Timeline, 1970-2026 (Before/After)"></iframe>
 </div>
 
 <script>
@@ -709,311 +529,21 @@
 </script>
 
 <script>
-(function () {
-  const DECADES = ["1970s", "1980s", "1990s", "2000s", "2010s", "2020s"];
+  const part2Toggle = document.getElementById("part2-toggle");
+  const part2Wrap = document.getElementById("part2-embed-wrap");
+  const part2Iframe = document.getElementById("part2-iframe");
 
-  const INDUSTRIES = [
-    { key: "all",        label: "All" },
-    { key: "restaurants", label: "Restaurants" },
-    { key: "retail",      label: "Retail" },
-    { key: "tech",        label: "Tech" },
-    { key: "fashion",     label: "Fashion" },
-    { key: "shipping",    label: "Shipping" },
-    { key: "food",        label: "Food & CPG" },
-    { key: "auto",        label: "Auto" },
-  ];
-
-  let activeIndustry = "all";
-  let activeDecade = null;
-  let scroller = null;
-  let suppressStepEnter = false;
-  const changesByDecade = new Map(DECADES.map(d => [d, []]));
-
-  function decadeOf(year) {
-    return `${Math.floor(year / 10) * 10}s`;
-  }
-
-  function logoUrl(brand, filename) {
-    return `logos/${encodeURIComponent(brand)}/${encodeURIComponent(filename)}`;
-  }
-
-  function buildLogo(brand, filename) {
-    const box = document.createElement("div");
-    box.className = "decade-logo";
-    const img = document.createElement("img");
-    img.alt = "";
-    img.loading = "lazy";
-    img.addEventListener("error", () => {
-      img.remove();
-      box.classList.add("placeholder");
-    });
-    img.src = logoUrl(brand, filename);
-    box.appendChild(img);
-    return box;
-  }
-
-  function buildYearCard(ev) {
-    const card = document.createElement("div");
-    card.className = "decade-year-card";
-    card.appendChild(buildLogo(ev.brand, ev.before.filename));
-
-    const arrow = document.createElement("span");
-    arrow.className = "decade-arrow";
-    arrow.textContent = "→";
-    card.appendChild(arrow);
-
-    card.appendChild(buildLogo(ev.brand, ev.after.filename));
-    return card;
-  }
-
-  function buildYearListFor(decade) {
-    const startYear = parseInt(decade, 10);
-    const endYear = Math.min(startYear + 10, new Date().getFullYear() + 1);
-    const events = changesByDecade.get(decade).filter(
-      e => activeIndustry === "all" || e.industry === activeIndustry
-    );
-
-    const byYear = new Map();
-    events.forEach(e => {
-      if (!byYear.has(e.year)) byYear.set(e.year, []);
-      byYear.get(e.year).push(e);
-    });
-
-    const list = document.createElement("div");
-    list.className = "decade-year-list";
-
-    for (let y = startYear; y < endYear; y++) {
-      const row = document.createElement("div");
-      row.className = "decade-year-row";
-
-      const label = document.createElement("div");
-      label.className = "decade-year-label";
-      label.textContent = y;
-      row.appendChild(label);
-
-      const evWrap = document.createElement("div");
-      evWrap.className = "decade-year-events";
-      (byYear.get(y) || []).forEach(ev => evWrap.appendChild(buildYearCard(ev)));
-      row.appendChild(evWrap);
-
-      list.appendChild(row);
+  part2Toggle.addEventListener("click", () => {
+    const isOpen = part2Toggle.getAttribute("aria-expanded") === "true";
+    if (!isOpen && !part2Iframe.src) {
+      part2Iframe.src = "year-timeline-compare.html";
     }
-
-    return list;
-  }
-
-  // buildYearListFor() does real DOM work (createElement per card/logo) — on
-  // repeat visits to the same decade+industry combo, reuse what was already
-  // built instead of redoing it. Keeps the expand interaction snappy since
-  // this work no longer has to happen synchronously mid-transition every time.
-  const yearListCache = new Map();
-  function getYearListFor(decade) {
-    const key = decade + "::" + activeIndustry;
-    if (!yearListCache.has(key)) {
-      yearListCache.set(key, buildYearListFor(decade));
+    part2Toggle.setAttribute("aria-expanded", String(!isOpen));
+    part2Wrap.hidden = isOpen;
+    if (!isOpen) {
+      part2Wrap.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-    return yearListCache.get(key).cloneNode(true);
-  }
-
-  // Fills a decade row's own drawer with fresh content. A row opening for the
-  // first time has nothing to fade out, so it renders immediately rather than
-  // waiting through the swap delay — that wait was stacking on top of the
-  // click's scroll animation and the track's own height transition, which is
-  // what made clicking a bar feel laggy compared to just scrolling to it.
-  function renderYearList(decade) {
-    const row = document.querySelector(`.decade-bar-row[data-decade="${decade}"]`);
-    const wrap = row.querySelector(".decade-year-list-wrap");
-    if (wrap.childElementCount === 0) {
-      wrap.appendChild(getYearListFor(decade));
-      return;
-    }
-    wrap.classList.add("is-swapping");
-    window.setTimeout(() => {
-      wrap.innerHTML = "";
-      wrap.appendChild(getYearListFor(decade));
-      wrap.classList.remove("is-swapping");
-    }, 200);
-  }
-
-  function setActiveDecade(decade) {
-    if (decade === activeDecade) return;
-    const isFirstOpen = activeDecade === null;
-    activeDecade = decade;
-
-    document.getElementById("decades-panel").classList.add("has-active");
-
-    document.querySelectorAll(".decade-bar-row").forEach(row => {
-      row.classList.toggle("active", row.dataset.decade === decade);
-    });
-
-    renderYearList(decade);
-
-    if (isFirstOpen) {
-      // The one collapsed-row -> expanded-drawer transition is the only time
-      // the panel's total height ever changes. Recalculate Scrollama's step
-      // positions once it settles — after this, total height is constant
-      // (exactly one row is always expanded), so no further resize is needed.
-      window.setTimeout(() => { if (scroller) scroller.resize(); }, 500);
-    }
-  }
-
-  function onIndustryChange() {
-    document.querySelectorAll(".decade-bar-row").forEach(row => {
-      if (row.dataset.decade !== activeDecade) {
-        row.querySelector(".decade-year-list-wrap").innerHTML = "";
-      }
-    });
-    if (activeDecade) renderYearList(activeDecade);
-  }
-
-  function buildBars() {
-    const barsEl = document.getElementById("decade-bars");
-    const maxCount = Math.max(1, ...DECADES.map(d => changesByDecade.get(d).length));
-
-    DECADES.forEach(decade => {
-      const count = changesByDecade.get(decade).length;
-      const row = document.createElement("div");
-      row.className = "decade-bar-row";
-      row.dataset.decade = decade;
-
-      const label = document.createElement("span");
-      label.className = "decade-bar-label";
-      label.textContent = decade;
-
-      const track = document.createElement("span");
-      track.className = "decade-bar-track";
-
-      const fill = document.createElement("span");
-      fill.className = "decade-bar-fill";
-      fill.style.width = `${Math.max(4, (count / maxCount) * 100)}%`;
-      track.appendChild(fill);
-
-      const yearListWrap = document.createElement("div");
-      yearListWrap.className = "decade-year-list-wrap";
-      track.appendChild(yearListWrap);
-
-      const countEl = document.createElement("span");
-      countEl.className = "decade-bar-count";
-      countEl.textContent = count;
-
-      row.appendChild(label);
-      row.appendChild(track);
-      row.appendChild(countEl);
-
-      row.addEventListener("click", (e) => {
-        if (e.target.closest(".decade-year-list-wrap")) return;
-        // Expand immediately on click rather than waiting for Scrollama to
-        // detect the scroll has settled — that round-trip was the main
-        // source of felt lag. The smooth scroll below just brings the row
-        // into view alongside the expansion, it no longer gates it.
-        setActiveDecade(decade);
-
-        // The sticky panel eats part of the viewport that scrollIntoView's
-        // own centering math doesn't know about, so Scrollama can end up
-        // detecting a neighboring step as the smooth scroll passes over it —
-        // overriding the decade we just correctly opened. Suppress step
-        // detection until the scroll actually settles so the click's own
-        // choice wins.
-        suppressStepEnter = true;
-        const clearSuppress = () => { suppressStepEnter = false; };
-        window.addEventListener("scrollend", clearSuppress, { once: true });
-        window.setTimeout(clearSuppress, 1200);
-
-        document.getElementById(`decade-step-${decade}`)
-          .scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-
-      barsEl.appendChild(row);
-    });
-  }
-
-  function buildSteps() {
-    const stepsEl = document.getElementById("decade-steps");
-    const leadIn = document.createElement("div");
-    leadIn.className = "decade-lead-in";
-    stepsEl.appendChild(leadIn);
-    DECADES.forEach(decade => {
-      const step = document.createElement("div");
-      step.className = "decade-step";
-      step.id = `decade-step-${decade}`;
-      step.dataset.decade = decade;
-      stepsEl.appendChild(step);
-    });
-  }
-
-  function buildFilters() {
-    const wrap = document.getElementById("decades-filters");
-    INDUSTRIES.forEach(({ key, label }) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "decades-filter-btn" + (key === activeIndustry ? " active" : "");
-
-      const text = document.createElement("span");
-      text.textContent = label;
-      btn.appendChild(text);
-
-      btn.addEventListener("click", () => {
-        activeIndustry = key;
-        document.querySelectorAll(".decades-filter-btn").forEach((el, i) => {
-          el.classList.toggle("active", INDUSTRIES[i].key === key);
-        });
-        onIndustryChange();
-      });
-
-      wrap.appendChild(btn);
-    });
-  }
-
-  function setupObserver() {
-    scroller = scrollama();
-    scroller
-      .setup({ step: ".decade-step", offset: 0.5 })
-      .onStepEnter(({ element }) => {
-        if (suppressStepEnter) return;
-        setActiveDecade(element.dataset.decade);
-      });
-  }
-
-  Promise.all([
-    d3.csv("data/summary.csv", d3.autoType),
-    d3.csv("data/timelines.csv", d3.autoType),
-  ]).then(([summary, timelines]) => {
-    const brandIndustry = new Map(summary.map(r => [r.brand, r.industry]));
-
-    const byBrand = new Map();
-    timelines.forEach(r => {
-      if (!byBrand.has(r.brand)) byBrand.set(r.brand, []);
-      byBrand.get(r.brand).push(r);
-    });
-
-    byBrand.forEach((rows, brand) => {
-      const sorted = rows.slice().sort((a, b) => a.year - b.year);
-      for (let i = 1; i < sorted.length; i++) {
-        const cur = sorted[i];
-        if (cur.change_score === null || Number.isNaN(cur.change_score)) continue;
-        const decade = decadeOf(cur.year);
-        if (!changesByDecade.has(decade)) continue;
-        changesByDecade.get(decade).push({
-          brand,
-          industry: brandIndustry.get(brand) || "other",
-          before: sorted[i - 1],
-          after: cur,
-          year: cur.year,
-          changeScore: cur.change_score,
-        });
-      }
-    });
-
-    buildFilters();
-    buildBars();
-    buildSteps();
-    setupObserver();
-  }).catch(err => {
-    console.error("Failed to load decade data", err);
-    document.getElementById("decade-bars").innerHTML =
-      '<p class="decade-empty">Failed to load data/summary.csv or data/timelines.csv. Serve this folder with `python3 -m http.server 8000` and open it via http://localhost, not file://.</p>';
   });
-})();
 </script>
 </body>
 </html>

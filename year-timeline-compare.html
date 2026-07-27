@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Logo Timeline, 1970–2026 (Before/After)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --page-bg: #f5f5f4;
+    --card-bg: #ffffff;
+    --ink: #1c1c1a;
+    --ink-muted: #6b6b67;
+    --ink-faint: #9a9a95;
+    --border: #e2e2dd;
+    --logo-card-bg: #fbfbf9;
+    --placeholder-bg: #c6faf6;
+    --placeholder-ink: #12403c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+
+  #sheet {
+    max-width: 1180px;
+    margin: 32px auto 80px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 48px 8px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  }
+
+  .decade-heading {
+    position: sticky;
+    top: 0;
+    background: var(--card-bg);
+    z-index: 3;
+    padding: 26px 0 16px;
+  }
+
+  .decade-heading h2 {
+    margin: 0;
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .decade-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-top: 2px;
+  }
+
+  .decade-range,
+  .decade-count {
+    font-size: 14px;
+    color: var(--ink-muted);
+  }
+
+  .decade-count { font-weight: 600; }
+
+  .decade-bar {
+    margin-top: 10px;
+    width: 320px;
+    max-width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--logo-card-bg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .decade-bar-fill {
+    height: 100%;
+    background: var(--placeholder-ink);
+    border-radius: 4px;
+  }
+
+  .year-heading {
+    position: sticky;
+    top: var(--decade-header-h, 116px);
+    background: var(--card-bg);
+    z-index: 2;
+    margin: 0;
+    padding: 20px 0 14px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink-muted);
+  }
+
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .year-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 560px) {
+    .year-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---- before/after compare card ---- */
+
+  .compare-card {
+    background: var(--logo-card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .compare-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .compare-row.single {
+    justify-content: center;
+  }
+
+  .compare-row.single .thumb-col {
+    flex: 0 0 50%;
+  }
+
+  .thumb-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .thumb-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+
+  .thumb-box {
+    height: 96px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .thumb-box.before { opacity: 0.8; }
+
+  .thumb-box img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .thumb-box .fallback-initials {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    display: none;
+  }
+
+  .compare-arrow {
+    flex: none;
+    font-size: 16px;
+    color: var(--ink-faint);
+    padding-top: 24px;
+  }
+
+  .thumb-year {
+    font-size: 14px;
+    color: var(--ink);
+    text-align: center;
+  }
+
+  .history-card {
+    width: calc((100% - 32px) / 3);
+    min-height: 230px;
+    margin: 0 0 20px;
+    background: var(--placeholder-bg);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--placeholder-ink);
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    .history-card { width: calc((100% - 16px) / 2); }
+  }
+
+  @media (max-width: 560px) {
+    .history-card { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div id="sheet">
+  <div id="timeline"></div>
+</div>
+
+<script>
+const START_YEAR = 1970;
+const END_YEAR = 2026;
+
+// A "History" placeholder is scattered in every five years (1970, 1975,
+// 1980, ...) rather than every single year — enough to break up the grid
+// without a placeholder box competing for attention in every section.
+function hasHistoryPlaceholder(year) {
+  return (year - START_YEAR) % 5 === 0;
+}
+
+function initials(name) {
+  const words = name.replace(/[^A-Za-z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
+}
+
+function logoUrl(brand, filename) {
+  return `logos/${encodeURIComponent(brand)}/${encodeURIComponent(filename)}`;
+}
+
+function buildThumb(row, kind) {
+  const box = document.createElement("div");
+  box.className = `thumb-box ${kind}`;
+
+  const img = document.createElement("img");
+  img.src = logoUrl(row.brand, row.filename);
+  img.alt = `${row.brand} logo, ${row.year}`;
+  box.appendChild(img);
+
+  const fallback = document.createElement("div");
+  fallback.className = "fallback-initials";
+  fallback.textContent = initials(row.brand);
+  box.appendChild(fallback);
+
+  img.addEventListener("error", () => {
+    img.style.display = "none";
+    fallback.style.display = "block";
+  });
+
+  return box;
+}
+
+function buildThumbCol(row, kind, label) {
+  const col = document.createElement("div");
+  col.className = "thumb-col";
+
+  const labelEl = document.createElement("div");
+  labelEl.className = "thumb-label";
+  labelEl.textContent = label;
+  col.appendChild(labelEl);
+
+  col.appendChild(buildThumb(row, kind));
+
+  const year = document.createElement("div");
+  year.className = "thumb-year";
+  year.textContent = row.year;
+  col.appendChild(year);
+
+  return col;
+}
+
+// Compares a logo change against whatever came immediately before it for
+// that brand — pulled from the brand's full history, not just the
+// 1970-2026 window, so a redesign shown here in (say) 1975 still gets
+// compared against its real pre-1970 predecessor rather than showing
+// nothing. Only called when a prior version actually exists.
+function buildCompareCard(row, prevRow) {
+  const card = document.createElement("div");
+  card.className = "compare-card";
+
+  const compareRow = document.createElement("div");
+  compareRow.className = "compare-row";
+
+  compareRow.appendChild(buildThumbCol(prevRow, "before", "Before"));
+
+  const arrow = document.createElement("div");
+  arrow.className = "compare-arrow";
+  arrow.textContent = "→";
+  compareRow.appendChild(arrow);
+
+  compareRow.appendChild(buildThumbCol(row, "after", "After"));
+
+  card.appendChild(compareRow);
+
+  return card;
+}
+
+// No prior version exists for this brand yet — there's nothing to compare
+// against, so this just shows the single logo rather than a before/after
+// pair with a placeholder "before" box.
+function buildSingleCard(row) {
+  const card = document.createElement("div");
+  card.className = "compare-card";
+
+  const single = document.createElement("div");
+  single.className = "compare-row single";
+  single.appendChild(buildThumbCol(row, "after", "Logo"));
+  card.appendChild(single);
+
+  return card;
+}
+
+function buildHistoryCard() {
+  const card = document.createElement("div");
+  card.className = "history-card";
+  card.textContent = "History";
+  return card;
+}
+
+function decadeStart(year) {
+  return Math.floor(year / 10) * 10;
+}
+
+d3.csv("data/timelines.csv", d3.autoType).then(rows => {
+  // Full per-brand history (unfiltered by year) so "before" can reach back
+  // past 1970 when a brand's redesign shown here was its first change since
+  // an earlier, off-timeline version.
+  const byBrandAll = new Map();
+  rows.forEach(r => {
+    if (!byBrandAll.has(r.brand)) byBrandAll.set(r.brand, []);
+    byBrandAll.get(r.brand).push(r);
+  });
+  byBrandAll.forEach(list => list.sort((a, b) => a.year - b.year));
+
+  function prevVersionOf(row) {
+    const list = byBrandAll.get(row.brand);
+    const idx = list.indexOf(row);
+    return idx > 0 ? list[idx - 1] : null;
+  }
+
+  const byYear = new Map();
+  rows.forEach(r => {
+    if (r.year < START_YEAR || r.year > END_YEAR) return;
+    if (!byYear.has(r.year)) byYear.set(r.year, []);
+    byYear.get(r.year).push(r);
+  });
+
+  const decadeStarts = [];
+  for (let y = decadeStart(START_YEAR); y <= END_YEAR; y += 10) decadeStarts.push(y);
+
+  const decadeCounts = decadeStarts.map(ds => {
+    let count = 0;
+    for (let y = ds; y < ds + 10 && y <= END_YEAR; y++) count += (byYear.get(y) || []).length;
+    return count;
+  });
+  const maxDecadeCount = Math.max(...decadeCounts);
+
+  const timeline = document.getElementById("timeline");
+
+  decadeStarts.forEach((ds, i) => {
+    const decadeEnd = Math.min(ds + 9, END_YEAR);
+    const count = decadeCounts[i];
+
+    const decadeSection = document.createElement("section");
+    decadeSection.className = "decade-section";
+
+    const decadeHeading = document.createElement("div");
+    decadeHeading.className = "decade-heading";
+
+    const h2 = document.createElement("h2");
+    h2.textContent = `${ds}s`;
+    decadeHeading.appendChild(h2);
+
+    const meta = document.createElement("div");
+    meta.className = "decade-meta";
+    meta.innerHTML =
+      `<span class="decade-range">${ds}–${decadeEnd}</span>` +
+      `<span class="decade-count">${count} logo change${count === 1 ? "" : "s"}</span>`;
+    decadeHeading.appendChild(meta);
+
+    const bar = document.createElement("div");
+    bar.className = "decade-bar";
+    const barFill = document.createElement("div");
+    barFill.className = "decade-bar-fill";
+    barFill.style.width = `${(count / maxDecadeCount) * 100}%`;
+    bar.appendChild(barFill);
+    decadeHeading.appendChild(bar);
+
+    decadeSection.appendChild(decadeHeading);
+
+    const decadeBody = document.createElement("div");
+    decadeBody.className = "decade-body";
+
+    for (let year = ds; year <= decadeEnd; year++) {
+      const rowsForYear = (byYear.get(year) || []).slice().sort((a, b) => a.brand.localeCompare(b.brand));
+
+      const yearSection = document.createElement("section");
+      yearSection.className = "year-section";
+
+      const yearHeading = document.createElement("h3");
+      yearHeading.className = "year-heading";
+      yearHeading.textContent = year;
+      yearSection.appendChild(yearHeading);
+
+      const grid = document.createElement("div");
+      grid.className = "year-grid";
+      rowsForYear.forEach(r => {
+        const prev = prevVersionOf(r);
+        grid.appendChild(prev ? buildCompareCard(r, prev) : buildSingleCard(r));
+      });
+      yearSection.appendChild(grid);
+
+      if (hasHistoryPlaceholder(year)) {
+        yearSection.appendChild(buildHistoryCard());
+      }
+
+      decadeBody.appendChild(yearSection);
+    }
+
+    decadeSection.appendChild(decadeBody);
+    timeline.appendChild(decadeSection);
+  });
+
+  const firstDecadeHeading = document.querySelector(".decade-heading");
+  if (firstDecadeHeading) {
+    document.documentElement.style.setProperty("--decade-header-h", `${firstDecadeHeading.getBoundingClientRect().height}px`);
+  }
+}).catch(err => {
+  console.error("Failed to load data/timelines.csv", err);
+  document.getElementById("timeline").innerHTML =
+    "<p style='padding:24px;color:#c0392b;'>Failed to load data/timelines.csv. Serve this folder with " +
+    "<code>python3 -m http.server 8000</code> and open it via http://localhost, not file://.</p>";
+});
+</script>
+</body>
+</html>

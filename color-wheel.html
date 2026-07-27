@@ -186,7 +186,6 @@
   .trajectory-path {
     stroke: var(--ink-faint);
     stroke-width: 1.5px;
-    stroke-dasharray: 3 4;
   }
 
   .clear-btn {
@@ -311,6 +310,20 @@ let width = 0, height = 940;
 const margin = { top: 30, right: 30, bottom: 46, left: 46 };
 
 const svg = d3.select("#chart");
+
+const trajectoryDefs = svg.append("defs");
+trajectoryDefs.append("marker")
+  .attr("id", "trajectory-arrow")
+  .attr("viewBox", "0 0 10 10")
+  .attr("refX", 8.5)
+  .attr("refY", 5)
+  .attr("markerWidth", 6)
+  .attr("markerHeight", 6)
+  .attr("orient", "auto-start-reverse")
+  .append("path")
+  .attr("d", "M0,0 L10,5 L0,10 z")
+  .attr("fill", "#9a9a95");
+
 const gColumns = svg.append("g").attr("class", "columns-layer");
 const gDefault = svg.append("g").attr("class", "default-layer");
 const gTrajectory = svg.append("g").attr("class", "trajectory-layer");
@@ -324,6 +337,10 @@ let trajectorySim = null;
 
 function slug(s) {
   return s.replace(/[^a-zA-Z0-9]/g, "-");
+}
+
+function yearLabelOf(v) {
+  return v.isLatest ? `${v.year} - present` : String(v.year);
 }
 
 function initials(name) {
@@ -710,29 +727,65 @@ function layoutTrajectory(versions) {
   for (let i = 0; i < 400; i++) trajectorySim.tick();
 }
 
+function trajectoryRadiusOf(v) {
+  return v.isLatest ? TRAJECTORY_R * LATEST_SCALE : TRAJECTORY_R;
+}
+
 function renderTrajectory(brand) {
   gTrajectory.selectAll("*").remove();
 
-  const versions = historyByBrand.get(brand) || [];
+  // Present first, oldest last — the reverse of historyByBrand's stored
+  // chronological order — so the trajectory reads as "here's today's logo,
+  // and here's what it used to be," walking backward through history.
+  const versions = (historyByBrand.get(brand) || []).slice().reverse();
   if (!versions.length) return;
 
   const origin = brandNodes.find(n => n.brand === brand) || { x: width / 2, y: height / 2 };
   layoutTrajectory(versions);
 
   const n = versions.length;
-  versions.forEach((v, i) => { v.tOpacity = n === 1 ? 1 : 0.2 + (i / (n - 1)) * 0.8; });
 
-  // connecting line as individual segments, each carrying the later
-  // endpoint's opacity, so the whole path visibly fades in through time
-  const gLines = gTrajectory.append("g").attr("class", "trajectory-lines");
+  // One continuous path from present to oldest, drawn in at a constant
+  // pace (like a pen tracing the route) instead of separate segments each
+  // fading in on their own — nodes no longer fly across the chart at all;
+  // they simply sit at their real position and pop into view exactly when
+  // the drawing line reaches them. That reads as "one line being revealed,
+  // stop by stop," rather than a scatter of bubbles independently animating.
+  let cumulative = 0;
+  let pathD = "";
+  const cumulativeAt = [0]; // cumulativeAt[i] = drawn length once node i has appeared
   for (let i = 1; i < n; i++) {
-    gLines.append("line")
+    const from = versions[i - 1], to = versions[i];
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const toR = trajectoryRadiusOf(to);
+    const endX = to.x - (dx / dist) * toR;
+    const endY = to.y - (dy / dist) * toR;
+    cumulative += Math.hypot(endX - from.x, endY - from.y);
+    cumulativeAt.push(cumulative);
+    pathD += `M${from.x},${from.y}L${endX},${endY}`;
+  }
+  const totalLength = cumulative || 1;
+  const TOTAL_DURATION = Math.min(1800, Math.max(650, n * 190));
+  const NODE_POP_DURATION = 220;
+
+  const gLines = gTrajectory.append("g").attr("class", "trajectory-lines");
+  if (n > 1) {
+    // The line's arrival at each node is deliberately timed to land AFTER
+    // that node has finished popping in (delayed by a full node-pop cycle
+    // plus a small buffer), never before — otherwise the line's leading
+    // edge visibly reaches a spot before any logo is there to receive it,
+    // which reads as confusing rather than connected.
+    gLines.append("path")
       .attr("class", "trajectory-path")
-      .attr("x1", versions[i - 1].x).attr("y1", versions[i - 1].y)
-      .attr("x2", versions[i].x).attr("y2", versions[i].y)
-      .style("opacity", 0)
-      .transition().duration(400).delay(80)
-      .style("opacity", versions[i].tOpacity);
+      .attr("d", pathD)
+      .attr("fill", "none")
+      .attr("marker-end", "url(#trajectory-arrow)")
+      .style("opacity", 0.85)
+      .style("stroke-dasharray", totalLength)
+      .style("stroke-dashoffset", totalLength)
+      .transition().ease(d3.easeLinear).delay(NODE_POP_DURATION + 450).duration(TOTAL_DURATION)
+      .style("stroke-dashoffset", 0);
   }
 
   const groups = gTrajectory.selectAll("g.wheel-node.trajectory-node")
@@ -740,12 +793,12 @@ function renderTrajectory(brand) {
     .enter()
     .append("g")
     .attr("class", "wheel-node trajectory-node")
-    .attr("transform", `translate(${origin.x},${origin.y})`)
+    .attr("transform", v => `translate(${v.x},${v.y}) scale(0.5)`)
     .style("opacity", 0);
 
   groups.each(function (v) {
     const g = d3.select(this);
-    const r = v.isLatest ? TRAJECTORY_R * LATEST_SCALE : TRAJECTORY_R;
+    const r = trajectoryRadiusOf(v);
     buildLogoNode(g, v.brand, v.filename, r, v.isLatest ? 4 : 3);
     g.select("circle.node-bg").attr("fill", v.hex);
     // The logo image already makes the brand obvious — only the year needs
@@ -754,7 +807,7 @@ function renderTrajectory(brand) {
     g.append("text")
       .attr("class", "trajectory-year")
       .attr("y", -(r + 10))
-      .text(v.year);
+      .text(yearLabelOf(v));
   });
 
   groups
@@ -764,13 +817,14 @@ function renderTrajectory(brand) {
 
   // Every version renders at full opacity — the fading-with-age treatment
   // made older logos hard to make out, and the year label already conveys
-  // chronological order without needing to also dim the image.
+  // chronological order without needing to also dim the image. Each node's
+  // delay is timed to the exact moment the drawing line above reaches it.
   groups.transition()
-    .duration(550)
-    .delay((v, i) => i * 30)
+    .duration(NODE_POP_DURATION)
+    .delay((v, i) => (cumulativeAt[i] / totalLength) * TOTAL_DURATION)
     .ease(d3.easeCubicOut)
     .style("opacity", 1)
-    .attr("transform", v => `translate(${v.x},${v.y})`);
+    .attr("transform", v => `translate(${v.x},${v.y}) scale(1)`);
 }
 
 // ---- tooltip ---------------------------------------------------------------
@@ -792,7 +846,7 @@ function showTooltip(event, d, historyEntry) {
   let html = `<div class="t-brand">${d.brand}</div>`;
 
   if (historyEntry) {
-    html += `<div class="t-sub">${historyEntry.year}</div>`;
+    html += `<div class="t-sub">${yearLabelOf(historyEntry)}</div>`;
     html += swatchesHtml(historyEntry.palette);
     const versions = historyByBrand.get(d.brand) || [];
     const idx = versions.indexOf(historyEntry);
@@ -801,7 +855,8 @@ function showTooltip(event, d, historyEntry) {
   } else {
     const node = brandNodes.find(n => n.brand === d.brand);
     if (node) {
-      html += `<div class="t-sub">${node.year}</div>`;
+      // brandNodes always holds each brand's latest version
+      html += `<div class="t-sub">${yearLabelOf({ ...node, isLatest: true })}</div>`;
       html += swatchesHtml(node.palette);
     }
   }
