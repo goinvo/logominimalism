@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color Space Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #1c1c1a;
+    --ink-muted: #6b6b67;
+    --ink-faint: #9a9a95;
+    --dot-grid: #dedcd6;
+    --chart-bg: #fbfbf9;
+    --card-bg: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+
+  #app {
+    min-width: 900px;
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 24px 28px 32px;
+  }
+
+  #hint-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 10px;
+  }
+
+  #hint-filter {
+    width: 148px;
+    flex: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  #layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  #filters {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 148px;
+    flex: none;
+  }
+
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    color: var(--ink-muted);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 7px 10px;
+    border-radius: 9px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+
+  .filter-btn:hover {
+    border-color: #c9c9c2;
+    color: var(--ink);
+  }
+
+  .filter-btn.active {
+    background: #f2f2ee;
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  #chart-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    background-color: var(--chart-bg);
+    background-image: radial-gradient(circle, var(--dot-grid) 1px, transparent 1.5px);
+    background-size: 22px 22px;
+    border: 1px solid #ececE7;
+    border-radius: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  svg#chart {
+    display: block;
+    height: 940px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .bucket-label { fill: var(--ink-muted); font-size: 12px; font-weight: 500; text-anchor: middle; }
+  .lightness-label { fill: var(--ink-muted); font-size: 12px; font-weight: 500; }
+  .bucket-divider { stroke: rgba(255,255,255,0.35); stroke-width: 1px; }
+
+  g.wheel-node {
+    cursor: pointer;
+    transition: opacity 260ms ease;
+  }
+
+  circle.node-bg,
+  circle.node-photo-bg {
+    transition: r 260ms ease, fill 260ms ease;
+  }
+
+  circle.node-ring {
+    stroke: #ffffff;
+    fill: none;
+    transition: r 260ms ease;
+    pointer-events: none;
+  }
+
+  image.node-logo {
+    transition: opacity 220ms ease;
+  }
+
+  text.fallback-initials {
+    fill: #ffffff;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+  }
+
+  circle.hit {
+    fill: transparent;
+    cursor: pointer;
+  }
+
+  text.node-label {
+    fill: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    text-anchor: middle;
+    pointer-events: none;
+    opacity: 0;
+    stroke: #fbfbf9;
+    stroke-width: 3px;
+    paint-order: stroke;
+    transition: opacity 180ms ease;
+  }
+
+  g.wheel-node:hover text.node-label,
+  g.wheel-node.label-visible text.node-label {
+    opacity: 1;
+  }
+
+  text.trajectory-year {
+    fill: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    text-anchor: middle;
+    pointer-events: none;
+    stroke: #fbfbf9;
+    stroke-width: 3px;
+    paint-order: stroke;
+  }
+
+  g.default-layer.trajectory-active {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .trajectory-path {
+    stroke: var(--ink-faint);
+    stroke-width: 1.5px;
+    stroke-dasharray: 3 4;
+  }
+
+  .clear-btn {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 5;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    color: var(--ink);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+
+  .clear-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: #ffffff;
+    border: 1px solid #e2e2dd;
+    color: var(--ink);
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 120ms ease;
+    z-index: 50;
+    max-width: 240px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  }
+
+  #tooltip.visible { opacity: 1; }
+  #tooltip .t-brand { font-weight: 700; }
+  #tooltip .t-sub { color: var(--ink-muted); margin-top: 2px; }
+  #tooltip .t-swatches { display: flex; gap: 4px; margin-top: 6px; }
+  #tooltip .t-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hint-row">
+    <div id="hint-filter">Filter by industry</div>
+  </div>
+  <div id="layout">
+    <nav id="filters"></nav>
+    <div id="chart-wrap">
+      <button id="clear-btn" class="clear-btn" type="button">&times; Clear</button>
+      <svg id="chart"></svg>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const INDUSTRIES = [
+  { key: "all",         label: "All" },
+  { key: "restaurants", label: "Restaurants" },
+  { key: "retail",      label: "Retail" },
+  { key: "tech",        label: "Tech" },
+  { key: "fashion",     label: "Fashion" },
+  { key: "shipping",    label: "Shipping" },
+  { key: "food",        label: "Food & CPG" },
+  { key: "auto",        label: "Auto" },
+];
+
+// Discrete color-family columns instead of a continuous hue axis — real logo
+// colors cluster hard into just a couple of hue regions (red, black/grey,
+// blue) which left a continuous 0-360 scale mostly empty with a few
+// desperately overcrowded hotspots. Buckets absorb density gracefully
+// instead: a busy "red" column just gets taller, it doesn't fight a nearly
+// empty "purple" column for the same width. Boundaries match the exact
+// coarse-hue buckets already used on the hue-families chart, for consistency.
+const BUCKET_ORDER = ["black", "grey", "red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"];
+const BUCKET_LABEL = {
+  black: "Black", grey: "Grey", red: "Red", orange: "Orange", yellow: "Yellow",
+  green: "Green", teal: "Teal", blue: "Blue", purple: "Purple", pink: "Pink",
+};
+// representative hue used only for each column's background gradient tint —
+// the achromatic buckets (black/grey) get a plain greyscale gradient
+const BUCKET_HUE = { red: 0, orange: 32, yellow: 55, green: 130, teal: 185, blue: 225, purple: 275, pink: 320 };
+
+function colorBucket(h, s, l) {
+  if (l < 16) return "black";
+  // near-white logos are rare and folded into grey rather than given their
+  // own column — a dedicated white bucket ended up empty in practice
+  if (l > 90 || s < 14) return "grey";
+  if (h < 15 || h >= 345) return "red";
+  if (h < 45) return "orange";
+  if (h < 70) return "yellow";
+  if (h < 170) return "green";
+  if (h < 200) return "teal";
+  if (h < 255) return "blue";
+  if (h < 290) return "purple";
+  return "pink";
+}
+
+const DEFAULT_R = 20;
+const TRAJECTORY_R = 48;
+const LATEST_SCALE = 1.15;
+
+let activeIndustry = "all";
+let activeBrand = null;
+let width = 0, height = 940;
+const margin = { top: 30, right: 30, bottom: 46, left: 46 };
+
+const svg = d3.select("#chart");
+const gColumns = svg.append("g").attr("class", "columns-layer");
+const gDefault = svg.append("g").attr("class", "default-layer");
+const gTrajectory = svg.append("g").attr("class", "trajectory-layer");
+const gAxis = svg.append("g").attr("class", "axis-layer");
+
+let xScale, yScale;
+let brandNodes = [];             // one entry per brand, latest-version state
+let historyByBrand = new Map();  // brand -> chronological array of versions
+let defaultSim = null;
+let trajectorySim = null;
+
+function slug(s) {
+  return s.replace(/[^a-zA-Z0-9]/g, "-");
+}
+
+function initials(name) {
+  const words = name.replace(/[^A-Za-z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
+}
+
+function logoUrl(brand, filename) {
+  return `logos/${encodeURIComponent(brand)}/${encodeURIComponent(filename)}`;
+}
+
+// ---- color math ----------------------------------------------------------
+
+function hexToHsl(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (d !== 0) {
+    switch (max) {
+      case r: h = ((g - b) / d) % 6; break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return { h, s: s * 100, l: l * 100 };
+}
+
+function parsePalette(paletteStr) {
+  return String(paletteStr || "").split(",").map(s => s.trim()).filter(Boolean);
+}
+
+// The chart plots each version by its single most dominant palette color —
+// palette entries are listed most- to least-prominent, so the first hex is it.
+// Palette order roughly reflects raw pixel coverage, and coverage is usually
+// dominated by the logo's white (or black) export canvas rather than the
+// mark itself — e.g. Ford's palette leads with a near-white background
+// before its actual blue, and Pringles' leads with white then near-black
+// before the red that's actually the logo's defining color. So instead of
+// always trusting the first entry, take whichever of the first few entries
+// is the most saturated ("most colorful") — that reads much closer to what
+// a person would call the logo's color. Falls back to the literal first
+// entry when the whole palette is genuinely achromatic (e.g. an
+// all-black-and-grey logo), so we don't manufacture false color from noise.
+function dominantColorOf(row) {
+  const hexes = parsePalette(row.palette);
+  if (!hexes.length) return { hex: "#b7b7b1", h: 0, s: 0, l: 50, bucket: "grey", palette: hexes };
+
+  const parsed = hexes.map(hex => ({ hex, ...hexToHsl(hex) }));
+  const candidates = parsed.slice(0, 5);
+  // HSL saturation is numerically unstable near the lightness extremes: its
+  // denominator (1 - |2l-1|) shrinks toward zero as l approaches 0% or 100%,
+  // so even a barely-visible tint on an almost-pure-white or almost-pure-
+  // black export-canvas pixel can compute as >90% "saturated" — beating out
+  // the logo's actual, genuinely vivid color. This is exactly what was
+  // sending Coca-Cola to grey (a pale pink highlight outscored its red),
+  // Burger King 1969 to grey (a cream background outscored its orange/red),
+  // and Oreo 1995 to grey (a near-white pixel outscored its blue). Excluding
+  // near-white/near-black swatches before ranking by saturation avoids the
+  // trap; only fall back to the unfiltered set when the whole sample is
+  // extreme (e.g. a genuinely monochrome dark logo has nothing else to pick).
+  const midtone = candidates.filter(c => c.l > 8 && c.l < 88);
+  const pool = midtone.length ? midtone : candidates;
+  const mostSaturated = pool.reduce((a, b) => (b.s > a.s ? b : a));
+  const chosen = mostSaturated.s >= 20 ? mostSaturated : parsed[0];
+
+  return { hex: chosen.hex, h: chosen.h, s: chosen.s, l: chosen.l, bucket: colorBucket(chosen.h, chosen.s, chosen.l), palette: hexes };
+}
+
+// ---- filters ---------------------------------------------------------------
+
+function buildFilters() {
+  const wrap = d3.select("#filters");
+  const btns = wrap.selectAll(".filter-btn")
+    .data(INDUSTRIES, d => d.key)
+    .enter()
+    .append("button")
+    .attr("class", d => "filter-btn" + (d.key === activeIndustry ? " active" : ""))
+    .attr("data-key", d => d.key);
+
+  btns.append("span").text(d => d.label);
+  btns.on("click", (event, d) => setIndustry(d.key));
+}
+
+function setIndustry(key) {
+  activeIndustry = key;
+  d3.selectAll(".filter-btn").classed("active", d => d.key === key);
+  updateOpacityState();
+}
+
+// ---- layout ------------------------------------------------------------
+
+// The whole chart fits within the visible container width — no horizontal
+// scrolling — so every column is visible on one page at once. Density within
+// a crowded column (reds especially) is handled by stacking logos across
+// multiple rows via the force layout, not by growing the canvas sideways.
+function measure() {
+  const rect = document.getElementById("chart-wrap").getBoundingClientRect();
+  width = Math.max(760, rect.width);
+  svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", width);
+
+  xScale = d3.scaleBand().domain(BUCKET_ORDER).range([margin.left, width - margin.right]).paddingInner(0.08);
+  yScale = d3.scaleLinear().domain([0, 100]).range([height - margin.bottom, margin.top]);
+}
+
+function bandCenter(bucket) {
+  return xScale(bucket) + xScale.bandwidth() / 2;
+}
+
+// Each column gets its own simple vertical gradient (white -> vivid hue ->
+// black for the eight hued buckets, plain white -> black for the three
+// achromatic ones) instead of one continuous 2D canvas render — since hue is
+// now constant within a column, a 3-stop SVG linearGradient reproduces the
+// same "vivid mid-band, fades to white/black at the ends" look exactly.
+function drawColumns() {
+  gColumns.selectAll("*").remove();
+
+  const defs = gColumns.append("defs");
+  BUCKET_ORDER.forEach(bucket => {
+    const grad = defs.append("linearGradient")
+      .attr("id", `grad-${bucket}`)
+      .attr("x1", "0").attr("x2", "0").attr("y1", "0").attr("y2", "1");
+    const hue = BUCKET_HUE[bucket];
+    if (hue === undefined) {
+      grad.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff");
+      grad.append("stop").attr("offset", "100%").attr("stop-color", "#000000");
+    } else {
+      grad.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff");
+      grad.append("stop").attr("offset", "50%").attr("stop-color", `hsl(${hue},100%,50%)`);
+      grad.append("stop").attr("offset", "100%").attr("stop-color", "#000000");
+    }
+  });
+
+  const plotTop = margin.top, plotBottom = height - margin.bottom;
+  BUCKET_ORDER.forEach(bucket => {
+    gColumns.append("rect")
+      .attr("x", xScale(bucket))
+      .attr("y", plotTop)
+      .attr("width", xScale.bandwidth())
+      .attr("height", plotBottom - plotTop)
+      .attr("rx", 4)
+      .attr("fill", `url(#grad-${bucket})`);
+  });
+}
+
+function drawAxis() {
+  gAxis.selectAll("*").remove();
+
+  BUCKET_ORDER.forEach(bucket => {
+    gAxis.append("text")
+      .attr("class", "bucket-label")
+      .attr("x", bandCenter(bucket))
+      .attr("y", height - margin.bottom + 20)
+      .text(BUCKET_LABEL[bucket]);
+  });
+
+  gAxis.append("text")
+    .attr("class", "lightness-label")
+    .attr("x", margin.left - 34)
+    .attr("y", margin.top + 4)
+    .attr("text-anchor", "start")
+    .text("light");
+
+  gAxis.append("text")
+    .attr("class", "lightness-label")
+    .attr("x", margin.left - 34)
+    .attr("y", height - margin.bottom)
+    .attr("text-anchor", "start")
+    .text("dark");
+}
+
+// ---- default (current-state) layer ----------------------------------------
+
+// True hue/lightness position is the target for every node, but with 64
+// logos plotted by real (often clustered) color, a light collision force is
+// needed to keep them legible — same "anchor to real data + de-overlap"
+// pattern the complexity chart uses, just applied on both axes here since
+// hue and lightness are equally meaningful (unlike that chart's year axis).
+function layoutDefaultNodes() {
+  if (defaultSim) defaultSim.stop();
+
+  // x targets each node's own column center; a lighter strength than y
+  // because x within a column is purely for legibility (any brand in
+  // "red" is equally "red" wherever it lands horizontally) while y stays a
+  // real, meaningful continuous value that should stay close to its target.
+  brandNodes.forEach(n => {
+    n.x = bandCenter(n.bucket);
+    n.y = yScale(n.l);
+  });
+
+  // Bounds are enforced as a force *during* the simulation rather than a
+  // clamp applied afterward — a post-hoc clamp can collapse several nodes
+  // that collision had already separated (but pushed past the edge) onto
+  // the exact same boundary value, undoing the separation.
+  function boundsForce() {
+    const y0 = margin.top + DEFAULT_R, y1 = height - margin.bottom - DEFAULT_R;
+    for (const n of brandNodes) {
+      const x0 = xScale(n.bucket) + DEFAULT_R, x1 = xScale(n.bucket) + xScale.bandwidth() - DEFAULT_R;
+      if (n.x < x0) n.x += (x0 - n.x) * 0.3;
+      else if (n.x > x1) n.x -= (n.x - x1) * 0.3;
+      if (n.y < y0) n.y += (y0 - n.y) * 0.3;
+      else if (n.y > y1) n.y -= (n.y - y1) * 0.3;
+    }
+  }
+
+  defaultSim = d3.forceSimulation(brandNodes)
+    .force("x", d3.forceX(d => bandCenter(d.bucket)).strength(0.2))
+    .force("y", d3.forceY(d => yScale(d.l)).strength(0.85))
+    .force("collide", d3.forceCollide(DEFAULT_R + 3).iterations(3))
+    .force("bounds", boundsForce)
+    .alphaDecay(0.03)
+    .stop();
+
+  for (let i = 0; i < 320; i++) defaultSim.tick();
+}
+
+function buildLogoNode(g, brand, filename, r, ringWidth) {
+  // The photo itself lives on a slightly smaller, always-white inner disc
+  // (clipR), leaving a colored rim of node-bg showing through at the edge.
+  // Two things this fixes: (1) many source logos are exported as a
+  // transparent-background wordmark in exactly the brand's dominant color —
+  // painting them directly onto a node-bg circle of that same color made the
+  // logo invisible (e.g. Toyota's red 1978/1989 marks, CVS's red 1969/1996
+  // marks vanished into a red circle). A guaranteed-white backdrop behind the
+  // image keeps every logo legible regardless of its own transparency.
+  // (2) the box is sized to the full disc (not an undersized inscribed
+  // square), so a logo now fills as much of the circle as its own aspect
+  // ratio allows; any letterboxed margin blends seamlessly into the white
+  // backdrop instead of exposing a visibly mismatched colored square, and
+  // "meet" (not "slice") keeps the whole logo intact — no cropped text.
+  const clipR = r * 0.86;
+
+  g.append("clipPath")
+    .attr("id", `clip-${slug(brand)}-${Math.round(Math.random() * 1e6)}`)
+    .append("circle")
+    .attr("r", clipR);
+  const clipId = g.select("clipPath").attr("id");
+
+  g.append("circle").attr("class", "node-bg").attr("r", r).attr("fill", "var(--card-bg)");
+  g.append("circle").attr("class", "node-photo-bg").attr("r", clipR).attr("fill", "#ffffff");
+
+  const img = g.append("image")
+    .attr("class", "node-logo")
+    .attr("clip-path", `url(#${clipId})`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .attr("width", clipR * 2)
+    .attr("height", clipR * 2)
+    .attr("x", -clipR)
+    .attr("y", -clipR)
+    .attr("href", logoUrl(brand, filename));
+
+  const fallback = g.append("text")
+    .attr("class", "fallback-initials")
+    .style("font-size", (clipR * 0.55) + "px")
+    .style("opacity", 0)
+    .text(initials(brand));
+
+  img.on("error", function () {
+    d3.select(this).style("opacity", 0);
+    fallback.style("opacity", 1);
+  });
+
+  g.append("circle").attr("class", "node-ring").attr("r", r).attr("stroke-width", ringWidth);
+  g.append("text").attr("class", "node-label").attr("y", -(r + 10)).text(brand);
+  g.append("circle").attr("class", "hit").attr("r", Math.max(16, r));
+}
+
+function renderDefaultLayer() {
+  const groups = gDefault.selectAll("g.wheel-node")
+    .data(brandNodes, d => d.brand)
+    .enter()
+    .append("g")
+    .attr("class", "wheel-node")
+    .attr("data-brand", d => d.brand);
+
+  groups.each(function (d) {
+    const g = d3.select(this);
+    buildLogoNode(g, d.brand, d.filename, DEFAULT_R, 2.5);
+    g.select("circle.node-bg").attr("fill", d.hex);
+  });
+
+  positionDefaultLayer();
+
+  groups
+    .on("mousemove", (event, d) => showTooltip(event, d, null))
+    .on("mouseleave", hideTooltip)
+    .on("click", (event, d) => {
+      event.stopPropagation();
+      toggleBrand(d.brand);
+    });
+}
+
+function positionDefaultLayer() {
+  gDefault.selectAll("g.wheel-node")
+    .attr("transform", d => `translate(${d.x},${d.y})`);
+}
+
+function updateOpacityState() {
+  const focusOn = activeIndustry !== "all";
+
+  gDefault.classed("trajectory-active", !!activeBrand);
+
+  gDefault.selectAll("g.wheel-node")
+    .style("opacity", d => {
+      if (activeBrand) return d.brand === activeBrand ? 0 : null; // handled by .trajectory-active
+      if (!focusOn) return 1;
+      return d.industry === activeIndustry ? 1 : 0.15;
+    })
+    .style("pointer-events", d => (activeBrand && d.brand !== activeBrand) ? "none" : "auto");
+}
+
+// ---- trajectory (click) state ----------------------------------------------
+
+function toggleBrand(brand) {
+  if (activeBrand === brand) {
+    clearSelection();
+    return;
+  }
+  activeBrand = brand;
+  updateOpacityState();
+  renderTrajectory(brand);
+  d3.select("#clear-btn").classed("visible", true);
+}
+
+function clearSelection() {
+  if (!activeBrand) return;
+  activeBrand = null;
+  updateOpacityState();
+  gTrajectory.selectAll("*")
+    .transition().duration(220)
+    .style("opacity", 0)
+    .remove();
+  d3.select("#clear-btn").classed("visible", false);
+}
+
+function layoutTrajectory(versions) {
+  if (trajectorySim) trajectorySim.stop();
+
+  // Brands whose color barely changed across years (Target's red, for
+  // instance) can land several versions on almost the exact same spot —
+  // a tiny random offset breaks that starting symmetry so the collision
+  // force has a clear direction to separate them, rather than being stuck
+  // with no gradient to push along (same fix used on the complexity chart).
+  versions.forEach(v => {
+    v.x = bandCenter(v.bucket) + (Math.random() - 0.5) * 4;
+    v.y = yScale(v.l) + (Math.random() - 0.5) * 4;
+  });
+
+  // Column/plot containment has to run as a force *during* the simulation,
+  // not a clamp applied afterward — clamping post-hoc can collapse several
+  // nodes that collision had already separated (but pushed past the edge)
+  // onto the exact same boundary value, undoing the separation entirely
+  // (this is exactly what was happening to Target's near-identical reds).
+  function boundsForce() {
+    const y0 = margin.top + TRAJECTORY_R, y1 = height - margin.bottom - TRAJECTORY_R;
+    for (const v of versions) {
+      const vx0 = xScale(v.bucket) + TRAJECTORY_R, vx1 = xScale(v.bucket) + xScale.bandwidth() - TRAJECTORY_R;
+      if (v.x < vx0) v.x += (vx0 - v.x) * 0.3;
+      else if (v.x > vx1) v.x -= (v.x - vx1) * 0.3;
+      if (v.y < y0) v.y += (y0 - v.y) * 0.3;
+      else if (v.y > y1) v.y -= (v.y - y1) * 0.3;
+    }
+  }
+
+  trajectorySim = d3.forceSimulation(versions)
+    .force("x", d3.forceX(v => bandCenter(v.bucket)).strength(0.15))
+    .force("y", d3.forceY(v => yScale(v.l)).strength(0.55))
+    // extra padding (beyond the circle's own radius) leaves room for the
+    // year label sitting above each node, so a densely-packed trajectory
+    // (e.g. Applebees' 8 versions) doesn't let one node's label collide
+    // with the circle directly above it
+    .force("collide", d3.forceCollide(TRAJECTORY_R + 24).iterations(4))
+    .force("bounds", boundsForce)
+    .alphaDecay(0.015)
+    .stop();
+
+  for (let i = 0; i < 400; i++) trajectorySim.tick();
+}
+
+function renderTrajectory(brand) {
+  gTrajectory.selectAll("*").remove();
+
+  const versions = historyByBrand.get(brand) || [];
+  if (!versions.length) return;
+
+  const origin = brandNodes.find(n => n.brand === brand) || { x: width / 2, y: height / 2 };
+  layoutTrajectory(versions);
+
+  const n = versions.length;
+  versions.forEach((v, i) => { v.tOpacity = n === 1 ? 1 : 0.2 + (i / (n - 1)) * 0.8; });
+
+  // connecting line as individual segments, each carrying the later
+  // endpoint's opacity, so the whole path visibly fades in through time
+  const gLines = gTrajectory.append("g").attr("class", "trajectory-lines");
+  for (let i = 1; i < n; i++) {
+    gLines.append("line")
+      .attr("class", "trajectory-path")
+      .attr("x1", versions[i - 1].x).attr("y1", versions[i - 1].y)
+      .attr("x2", versions[i].x).attr("y2", versions[i].y)
+      .style("opacity", 0)
+      .transition().duration(400).delay(80)
+      .style("opacity", versions[i].tOpacity);
+  }
+
+  const groups = gTrajectory.selectAll("g.wheel-node.trajectory-node")
+    .data(versions, v => v.year)
+    .enter()
+    .append("g")
+    .attr("class", "wheel-node trajectory-node")
+    .attr("transform", `translate(${origin.x},${origin.y})`)
+    .style("opacity", 0);
+
+  groups.each(function (v) {
+    const g = d3.select(this);
+    const r = v.isLatest ? TRAJECTORY_R * LATEST_SCALE : TRAJECTORY_R;
+    buildLogoNode(g, v.brand, v.filename, r, v.isLatest ? 4 : 3);
+    g.select("circle.node-bg").attr("fill", v.hex);
+    // The logo image already makes the brand obvious — only the year needs
+    // a label here, so the brand-name text stays blank in this view.
+    g.select("text.node-label").text("");
+    g.append("text")
+      .attr("class", "trajectory-year")
+      .attr("y", -(r + 10))
+      .text(v.year);
+  });
+
+  groups
+    .on("mousemove", (event, v) => showTooltip(event, { brand }, v))
+    .on("mouseleave", hideTooltip)
+    .on("click", (event) => { event.stopPropagation(); clearSelection(); });
+
+  // Every version renders at full opacity — the fading-with-age treatment
+  // made older logos hard to make out, and the year label already conveys
+  // chronological order without needing to also dim the image.
+  groups.transition()
+    .duration(550)
+    .delay((v, i) => i * 30)
+    .ease(d3.easeCubicOut)
+    .style("opacity", 1)
+    .attr("transform", v => `translate(${v.x},${v.y})`);
+}
+
+// ---- tooltip ---------------------------------------------------------------
+
+function swatchesHtml(hexes) {
+  return `<div class="t-swatches">${hexes.map(hex => `<div class="t-swatch" style="background:${hex}" title="${hex}"></div>`).join("")}</div>`;
+}
+
+function deltaDescription(curr, prev) {
+  if (!prev) return "earliest known version";
+  const dL = curr.l - prev.l;
+  if (curr.bucket !== prev.bucket) return `shifted toward ${curr.bucket}`;
+  if (Math.abs(dL) >= 4) return dL > 0 ? "moved lighter" : "moved darker";
+  return "little change from previous version";
+}
+
+function showTooltip(event, d, historyEntry) {
+  const tt = d3.select("#tooltip");
+  let html = `<div class="t-brand">${d.brand}</div>`;
+
+  if (historyEntry) {
+    html += `<div class="t-sub">${historyEntry.year}</div>`;
+    html += swatchesHtml(historyEntry.palette);
+    const versions = historyByBrand.get(d.brand) || [];
+    const idx = versions.indexOf(historyEntry);
+    const prev = idx > 0 ? versions[idx - 1] : null;
+    html += `<div class="t-sub">${deltaDescription(historyEntry, prev)}</div>`;
+  } else {
+    const node = brandNodes.find(n => n.brand === d.brand);
+    if (node) {
+      html += `<div class="t-sub">${node.year}</div>`;
+      html += swatchesHtml(node.palette);
+    }
+  }
+
+  tt.html(html);
+  tt.classed("visible", true)
+    .style("left", (event.clientX + 16) + "px")
+    .style("top", (event.clientY + 12) + "px");
+}
+
+function hideTooltip() {
+  d3.select("#tooltip").classed("visible", false);
+}
+
+// ---- background click / clear button ---------------------------------------
+
+document.getElementById("clear-btn").addEventListener("click", (event) => {
+  event.stopPropagation();
+  clearSelection();
+});
+
+document.addEventListener("click", () => {
+  if (!activeBrand) return;
+  clearSelection();
+});
+
+// ---- data load ---------------------------------------------------------------
+
+Promise.all([
+  d3.csv("data/summary.csv", d3.autoType),
+  d3.csv("data/timelines.csv", d3.autoType),
+]).then(([summary, timelines]) => {
+  const industryByBrand = new Map(summary.map(r => [r.brand, r.industry]));
+
+  const rowsByBrand = new Map();
+  timelines.forEach(r => {
+    if (!rowsByBrand.has(r.brand)) rowsByBrand.set(r.brand, []);
+    rowsByBrand.get(r.brand).push(r);
+  });
+
+  // sanity-check the palette parsing before building anything visual
+  console.log("--- color-wheel.html: palette parse check (first 4 brands) ---");
+  let logged = 0;
+  rowsByBrand.forEach((rows, brand) => {
+    if (logged >= 4) return;
+    const latest = rows.slice().sort((a, b) => b.year - a.year)[0];
+    console.log(brand, latest.year, dominantColorOf(latest));
+    logged++;
+  });
+
+  brandNodes = [];
+  rowsByBrand.forEach((rows, brand) => {
+    const sorted = rows.slice().sort((a, b) => a.year - b.year);
+    const latest = sorted[sorted.length - 1];
+    const industry = industryByBrand.get(brand) || "other";
+
+    brandNodes.push({
+      brand,
+      industry,
+      year: latest.year,
+      filename: latest.filename,
+      ...dominantColorOf(latest),
+    });
+
+    const history = sorted.map((r, i) => ({
+      brand,
+      industry,
+      year: r.year,
+      filename: r.filename,
+      isLatest: i === sorted.length - 1,
+      ...dominantColorOf(r),
+    }));
+    historyByBrand.set(brand, history);
+  });
+
+  buildFilters();
+  measure();
+  drawColumns();
+  drawAxis();
+  layoutDefaultNodes();
+  renderDefaultLayer();
+  updateOpacityState();
+
+  window.addEventListener("resize", () => {
+    clearSelection();
+    measure();
+    drawColumns();
+    drawAxis();
+    layoutDefaultNodes();
+    positionDefaultLayer();
+  });
+}).catch(err => {
+  console.error("Failed to load data", err);
+  d3.select("#chart-wrap").append("div")
+    .style("color", "#c0392b")
+    .style("padding", "24px")
+    .style("position", "relative")
+    .style("z-index", "2")
+    .text("Failed to load data/summary.csv or data/timelines.csv. Serve this folder with `python3 -m http.server 8000` and open it via http://localhost, not file://.");
+});
+</script>
+</body>
+</html>
