@@ -239,6 +239,22 @@
     border-radius: 4px;
     border: 1px solid rgba(0,0,0,0.08);
   }
+
+  @media (max-width: 720px) {
+    #app { min-width: 0; padding: 16px 12px 24px; }
+    #hint-row { flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    #hint-filter { width: auto; }
+    #layout { flex-direction: column; }
+    #filters { width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .filter-btn { flex: 1 1 auto; }
+    /* The chart itself stays as wide as it needs to be for all ten color
+       columns and scrolls horizontally within its own box (overflow-x:
+       auto, unchanged) — but the BOX has to be explicitly capped to the
+       viewport, otherwise a column flex item just grows to fit that wide
+       content instead of clipping it, dragging the whole page along. */
+    #chart-wrap { width: 100%; max-width: 100%; }
+    svg#chart { height: 700px; }
+  }
 </style>
 </head>
 <body>
@@ -745,11 +761,10 @@ function renderTrajectory(brand) {
 
   const n = versions.length;
 
-  // One continuous path from present to oldest, drawn in at a constant
-  // pace (like a pen tracing the route) instead of separate segments each
-  // fading in on their own — nodes no longer fly across the chart at all;
-  // they simply sit at their real position and pop into view exactly when
-  // the drawing line reaches them. That reads as "one line being revealed,
+  // One continuous path from present to oldest, drawn in like a pen
+  // tracing the route — nodes no longer fly across the chart at all; they
+  // simply sit at their real position and pop into view exactly when the
+  // drawing line reaches them. That reads as "one line being revealed,
   // stop by stop," rather than a scatter of bubbles independently animating.
   let cumulative = 0;
   let pathD = "";
@@ -769,13 +784,47 @@ function renderTrajectory(brand) {
   const TOTAL_DURATION = Math.min(1800, Math.max(650, n * 190));
   const NODE_POP_DURATION = 220;
 
+  // Pacing nodes purely by pixel distance along the path means versions
+  // with near-identical colors (clustered close together, e.g. several
+  // years of a nearly-unchanged logo) reveal almost simultaneously — there
+  // isn't enough physical distance between them to carry any real time.
+  // A minimum gap floor guarantees every step gets a perceptible beat,
+  // while segments that really are far apart still take proportionally
+  // longer, so genuine jumps across the chart still read as a bigger move.
+  const MIN_STEP_GAP = 260;
+  const nodeDelay = [0];
+  for (let i = 1; i < n; i++) {
+    const proportional = (cumulativeAt[i] / totalLength) * TOTAL_DURATION;
+    nodeDelay.push(Math.max(proportional, nodeDelay[i - 1] + MIN_STEP_GAP));
+  }
+
   const gLines = gTrajectory.append("g").attr("class", "trajectory-lines");
   if (n > 1) {
     // The line's arrival at each node is deliberately timed to land AFTER
     // that node has finished popping in (delayed by a full node-pop cycle
     // plus a small buffer), never before — otherwise the line's leading
     // edge visibly reaches a spot before any logo is there to receive it,
-    // which reads as confusing rather than connected.
+    // which reads as confusing rather than connected. Since nodes no longer
+    // advance at a constant pace (see the gap floor above), the line's own
+    // draw-in follows that same uneven schedule via a manual tween instead
+    // of a single constant-speed animation.
+    const ARRIVE_BUFFER = NODE_POP_DURATION + 450;
+    const timeCheckpoints = nodeDelay.map(t => t + ARRIVE_BUFFER);
+    const grandTotal = timeCheckpoints[n - 1];
+
+    function lengthAtTime(tMs) {
+      if (tMs <= timeCheckpoints[0]) return 0;
+      for (let i = 1; i < n; i++) {
+        if (tMs <= timeCheckpoints[i]) {
+          const t0 = timeCheckpoints[i - 1], t1 = timeCheckpoints[i];
+          const l0 = cumulativeAt[i - 1], l1 = cumulativeAt[i];
+          const frac = (tMs - t0) / (t1 - t0 || 1);
+          return l0 + (l1 - l0) * frac;
+        }
+      }
+      return totalLength;
+    }
+
     gLines.append("path")
       .attr("class", "trajectory-path")
       .attr("d", pathD)
@@ -784,8 +833,8 @@ function renderTrajectory(brand) {
       .style("opacity", 0.85)
       .style("stroke-dasharray", totalLength)
       .style("stroke-dashoffset", totalLength)
-      .transition().ease(d3.easeLinear).delay(NODE_POP_DURATION + 450).duration(TOTAL_DURATION)
-      .style("stroke-dashoffset", 0);
+      .transition().duration(grandTotal).ease(d3.easeLinear)
+      .styleTween("stroke-dashoffset", () => t => String(totalLength - lengthAtTime(t * grandTotal)));
   }
 
   const groups = gTrajectory.selectAll("g.wheel-node.trajectory-node")
@@ -821,7 +870,7 @@ function renderTrajectory(brand) {
   // delay is timed to the exact moment the drawing line above reaches it.
   groups.transition()
     .duration(NODE_POP_DURATION)
-    .delay((v, i) => (cumulativeAt[i] / totalLength) * TOTAL_DURATION)
+    .delay((v, i) => nodeDelay[i])
     .ease(d3.easeCubicOut)
     .style("opacity", 1)
     .attr("transform", v => `translate(${v.x},${v.y}) scale(1)`);

@@ -230,6 +230,16 @@
   #tooltip.visible { opacity: 1; }
   #tooltip .t-brand { font-weight: 700; }
   #tooltip .t-sub { color: var(--ink-muted); margin-top: 2px; }
+
+  @media (max-width: 720px) {
+    #app { min-width: 0; padding: 16px 12px 24px; }
+    #hint-row { flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    #hint-filter { width: auto; }
+    #layout { flex-direction: column; }
+    #filters { width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .filter-btn { flex: 1 1 auto; }
+    svg#chart { height: 640px; }
+  }
 </style>
 </head>
 <body>

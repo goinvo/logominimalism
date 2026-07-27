@@ -313,22 +313,73 @@
     transform: rotate(180deg);
   }
 
-  .part2-embed-wrap {
+  .expand-embed-wrap {
     max-width: 1180px;
     margin: 0 auto 56px;
     padding: 0 24px;
   }
 
-  .part2-embed-wrap iframe {
+  .expand-embed-wrap iframe {
     display: block;
     width: 100%;
     height: 900px;
     border: 1px solid #e2e2dd;
     border-radius: 16px;
   }
+
+  #part3-embed-wrap iframe {
+    height: 460px;
+  }
+
+  #title-art {
+    max-width: 720px;
+    margin: 48px auto 0;
+    padding: 0 24px;
+  }
+
+  #title-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  #site-footer {
+    max-width: 1180px;
+    margin: 24px auto 0;
+    padding: 24px 24px 64px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    border-top: 1px solid #e2e2dd;
+  }
+
+  .footer-logo {
+    flex: none;
+    font-size: 19px;
+    font-weight: 700;
+    color: #b5b5b0;
+    text-decoration: none;
+  }
+
+  .footer-logo:hover { color: #8f8f8a; }
+
+  .footer-text p {
+    font-size: 13px;
+    color: #6b6b67;
+    line-height: 1.6;
+    margin: 0 0 4px;
+  }
+
+  .footer-text p:last-child { margin-bottom: 0; }
+
+  .footer-text a { color: #6b6b67; }
 </style>
 </head>
 <body>
+<div id="title-art">
+  <img src="assets/blanding-title.png" alt="The Blanding of Branding">
+</div>
+
 <div class="story">
   <img class="panel-img" src="assets/panel1-mall.png" alt="">
   <img class="panel-img" src="assets/panel2-toysrus.png" alt="">
@@ -499,9 +550,29 @@
   <span class="part-card-chevron" aria-hidden="true">&#9662;</span>
 </button>
 
-<div class="part2-embed-wrap" id="part2-embed-wrap" hidden>
+<div class="expand-embed-wrap" id="part2-embed-wrap" hidden>
   <iframe id="part2-iframe" title="Logo Timeline, 1970-2026 (Before/After)"></iframe>
 </div>
+
+<button class="part-card" id="part3-toggle" type="button" aria-expanded="false" aria-controls="part3-embed-wrap">
+  <h2>Part 3: Methodology</h2>
+  <ul>
+    <li>How did we choose brands, determine complexity scores, and sort by color?</li>
+  </ul>
+  <span class="part-card-chevron" aria-hidden="true">&#9662;</span>
+</button>
+
+<div class="expand-embed-wrap" id="part3-embed-wrap" hidden>
+  <iframe id="part3-iframe" title="Methodology"></iframe>
+</div>
+
+<footer id="site-footer">
+  <a class="footer-logo" href="https://www.goinvo.com" target="_blank" rel="noopener">goinvo</a>
+  <div class="footer-text">
+    <p>By Victoria Liu, with Juhan Sonin and Shirley Xu</p>
+    <p>This project and designs are licensed under open source <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">Creative Commons Attribution v4</a>. View on <a href="https://github.com/goinvo/logominimalism" target="_blank" rel="noopener">GitHub</a>.</p>
+  </div>
+</footer>
 
 <script>
   const polaroidStrip = document.getElementById("polaroid-strip");
@@ -529,21 +600,26 @@
 </script>
 
 <script>
-  const part2Toggle = document.getElementById("part2-toggle");
-  const part2Wrap = document.getElementById("part2-embed-wrap");
-  const part2Iframe = document.getElementById("part2-iframe");
+  function setupExpandCard(toggleId, wrapId, iframeId, src) {
+    const toggle = document.getElementById(toggleId);
+    const wrap = document.getElementById(wrapId);
+    const iframe = document.getElementById(iframeId);
 
-  part2Toggle.addEventListener("click", () => {
-    const isOpen = part2Toggle.getAttribute("aria-expanded") === "true";
-    if (!isOpen && !part2Iframe.src) {
-      part2Iframe.src = "year-timeline-compare.html";
-    }
-    part2Toggle.setAttribute("aria-expanded", String(!isOpen));
-    part2Wrap.hidden = isOpen;
-    if (!isOpen) {
-      part2Wrap.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  });
+    toggle.addEventListener("click", () => {
+      const isOpen = toggle.getAttribute("aria-expanded") === "true";
+      if (!isOpen && !iframe.src) {
+        iframe.src = src;
+      }
+      toggle.setAttribute("aria-expanded", String(!isOpen));
+      wrap.hidden = isOpen;
+      if (!isOpen) {
+        wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }
+
+  setupExpandCard("part2-toggle", "part2-embed-wrap", "part2-iframe", "year-timeline-compare.html");
+  setupExpandCard("part3-toggle", "part3-embed-wrap", "part3-iframe", "methodology.html");
 </script>
 </body>
 </html>
