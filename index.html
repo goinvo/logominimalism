@@ -355,13 +355,18 @@
 
   .footer-logo {
     flex: none;
-    font-size: 19px;
-    font-weight: 700;
-    color: #b5b5b0;
-    text-decoration: none;
+    display: block;
   }
 
-  .footer-logo:hover { color: #8f8f8a; }
+  .footer-logo img {
+    display: block;
+    width: 84px;
+    height: auto;
+    opacity: 0.85;
+    transition: opacity 160ms ease;
+  }
+
+  .footer-logo:hover img { opacity: 1; }
 
   .footer-text p {
     font-size: 13px;
@@ -567,7 +572,7 @@
 </div>
 
 <footer id="site-footer">
-  <a class="footer-logo" href="https://www.goinvo.com" target="_blank" rel="noopener">goinvo</a>
+  <a class="footer-logo" href="https://www.goinvo.com" target="_blank" rel="noopener"><img src="assets/goinvo-logo.png" alt="GoInvo"></a>
   <div class="footer-text">
     <p>By Victoria Liu, with Juhan Sonin and Shirley Xu</p>
     <p>This project and designs are licensed under open source <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">Creative Commons Attribution v4</a>. View on <a href="https://github.com/goinvo/logominimalism" target="_blank" rel="noopener">GitHub</a>.</p>
