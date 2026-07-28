@@ -130,6 +130,22 @@
   .hint-tick { stroke: #E8472A; stroke-width: 2.5; stroke-linecap: round; }
   .hint-text { fill: var(--ink); font-size: 13px; font-weight: 600; }
 
+  .slider-track { stroke: var(--axis); stroke-width: 2; stroke-linecap: round; }
+  .slider-handle {
+    fill: var(--ink);
+    stroke: #ffffff;
+    stroke-width: 2.5;
+    cursor: grab;
+  }
+  .slider-handle:active { cursor: grabbing; }
+  .slider-cheer { stroke: #E8472A; stroke-width: 2.5; stroke-linecap: round; }
+  .slider-caption { fill: var(--ink); font-size: 13.5px; font-weight: 500; }
+
+  g.node.year-hidden {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
   g.dots-layer {
     transition: opacity 280ms ease;
   }
@@ -289,9 +305,15 @@ let activeIndustry = "restaurants";
 let nodes = [];
 let timelinesByBrand = new Map();
 let simulation;
-let width = 0, height = 860;
+// extra height/bottom-margin (added in lockstep, so the existing plot area
+// keeps its exact prior pixel geometry) reserved for the year slider strip
+const SLIDER_ZONE = 90;
+let width = 0, height = 860 + SLIDER_ZONE;
 let hintDismissed = false;
-const margin = { top: 50, right: 32, bottom: 92, left: 64 };
+const margin = { top: 50, right: 32, bottom: 92 + SLIDER_ZONE, left: 64 };
+
+let sliderYear;
+let sliderDragging = false;
 
 const svg = d3.select("#chart");
 const gAxis = svg.append("g").attr("class", "axis-layer");
@@ -300,6 +322,7 @@ const gExplode = svg.append("g").attr("class", "explode-layer");
 const gExplodeLines = gExplode.append("g").attr("class", "explode-lines");
 const gExplodeDots = gExplode.append("g").attr("class", "explode-dots");
 const gHint = svg.append("g").attr("class", "hint-layer").style("pointer-events", "none");
+const gSlider = svg.append("g").attr("class", "slider-layer");
 
 let scoreScale;
 let xScale;
@@ -486,6 +509,95 @@ function latestLogoRow(brand) {
   return rows.slice().sort((a, b) => b.year - a.year)[0];
 }
 
+// Whichever version of a brand's logo was actually current as of a given
+// year — the slider's whole premise is "what did the logo landscape look
+// like back then," so a brand redesigned in 2015 should still show its
+// pre-2015 mark when the slider sits at, say, 2005 rather than jumping
+// straight to today's logo the moment the brand exists at all.
+function rowAsOfYear(brand, year) {
+  const rows = timelinesByBrand.get(brand) || [];
+  const eligible = rows.filter(r => r.year <= year);
+  if (!eligible.length) return null;
+  return eligible.reduce((latest, r) => (r.year > latest.year ? r : latest));
+}
+
+// Drives the year slider at the bottom of the chart: brands that didn't
+// exist yet as of sliderYear disappear entirely (context dots and focused
+// ones alike), and any focused dot still visible swaps to whichever logo
+// was actually current back then instead of always showing today's mark.
+function applyYearFilter() {
+  gDots.selectAll("g.node").each(function (d) {
+    const asOf = rowAsOfYear(d.brand, sliderYear);
+    const g = d3.select(this);
+    g.classed("year-hidden", !asOf);
+    if (!asOf) return;
+    if (d._focused) applyFocusedVisual(g, d, asOf);
+  });
+}
+
+function drawSlider() {
+  gSlider.selectAll("*").remove();
+  gSlider.attr("data-year", sliderYear);
+
+  const trackY = height - margin.bottom + 100;
+  const x0 = margin.left, x1 = width - margin.right;
+
+  gSlider.append("line")
+    .attr("class", "slider-track")
+    .attr("x1", x0).attr("x2", x1)
+    .attr("y1", trackY).attr("y2", trackY);
+
+  const handleX = xScale(sliderYear);
+
+  const cheerX = handleX - 24, cheerY = trackY + 22;
+  [[-8, -30], [4, -22], [16, -30]].forEach(([dx, dy]) => {
+    gSlider.append("line")
+      .attr("class", "slider-cheer")
+      .attr("x1", cheerX + dx).attr("y1", cheerY - dy)
+      .attr("x2", cheerX + dx * 1.6).attr("y2", cheerY - dy * 1.7);
+  });
+
+  gSlider.append("text")
+    .attr("class", "slider-caption")
+    .attr("x", cheerX + 34)
+    .attr("y", cheerY + 6)
+    .text("use the slider to see logos up to that year!");
+
+  const handle = gSlider.append("circle")
+    .attr("class", "slider-handle")
+    .attr("r", 8)
+    .attr("cx", handleX)
+    .attr("cy", trackY);
+
+  handle.call(
+    d3.drag()
+      .on("start", () => { sliderDragging = true; })
+      .on("drag", (event) => {
+        const y = Math.round(xScale.invert(event.x));
+        sliderYear = Math.max(xScale.domain()[0], Math.min(CURRENT_YEAR, y));
+        drawSlider();
+        applyYearFilter();
+      })
+      .on("end", () => { sliderDragging = false; })
+  );
+
+  // clicking anywhere on the track jumps the handle straight there, rather
+  // than making a user precisely grab an 8px circle to start interacting
+  gSlider.append("line")
+    .attr("x1", x0).attr("x2", x1)
+    .attr("y1", trackY).attr("y2", trackY)
+    .attr("stroke", "transparent")
+    .attr("stroke-width", 20)
+    .style("cursor", "pointer")
+    .on("click", (event) => {
+      const [mx] = d3.pointer(event);
+      const y = Math.round(xScale.invert(mx));
+      sliderYear = Math.max(xScale.domain()[0], Math.min(CURRENT_YEAR, y));
+      drawSlider();
+      applyYearFilter();
+    });
+}
+
 function initSim(data) {
   nodes = data.map(d => ({
     ...d,
@@ -625,12 +737,12 @@ function hideTooltip() {
   d3.select("#tooltip").classed("visible", false);
 }
 
-function applyFocusedVisual(g, d) {
+function applyFocusedVisual(g, d, rowOverride) {
   const bg = g.select("circle.node-bg");
   const ring = g.select("circle.node-ring");
   const img = g.select("image.node-logo");
   const fallback = g.select("text.fallback-initials");
-  const row = latestLogoRow(d.brand);
+  const row = rowOverride !== undefined ? rowOverride : latestLogoRow(d.brand);
 
   fallback.text(initials(d.brand));
 
@@ -692,6 +804,8 @@ function updateFocusState() {
 
   simulation.force("collide", d3.forceCollide(d => d.r + (focusOn ? 3 : 1)));
   simulation.alpha(0.9).restart();
+
+  applyYearFilter();
 }
 
 // Turns a single "present day" summary dot into that brand's full version
@@ -739,6 +853,7 @@ function explodeBrand(d) {
 
   runExplodeSim();
   gDots.classed("explore-hidden", true);
+  gSlider.style("opacity", 0).style("pointer-events", "none");
   renderExplodeNodes(origin);
   updateBackButton();
 }
@@ -917,6 +1032,7 @@ function closeExplode() {
 
   setXScale(baseXDomain());
   drawAxis();
+  drawSlider();
 
   gExplodeDots.selectAll("g.explode-node")
     .transition().duration(280)
@@ -929,6 +1045,7 @@ function closeExplode() {
     .remove();
 
   gDots.classed("explore-hidden", false);
+  gSlider.style("opacity", 1).style("pointer-events", "auto");
 
   updateBackButton();
 }
@@ -955,11 +1072,13 @@ Promise.all([
   computeEdgeDensityStats(timelines);
   const earliestYear = d3.min(timelines, r => r.year);
   axisStartYear = Math.floor(earliestYear / 5) * 5;
+  sliderYear = CURRENT_YEAR;
 
   buildFilters();
   measureWidth();
   buildScale(summary);
   drawAxis();
+  drawSlider();
   initSim(summary);
   renderDots();
   ticked();
@@ -970,6 +1089,7 @@ Promise.all([
     measureWidth();
     buildScale(summary);
     drawAxis();
+    drawSlider();
     simulation.force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1));
     simulation.force("x", d3.forceX(() => presentCenterX).strength(0.06));
     simulation.alpha(0.6).restart();
