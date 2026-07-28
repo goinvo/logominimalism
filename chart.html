@@ -131,15 +131,23 @@
   .hint-text { fill: var(--ink); font-size: 13px; font-weight: 600; }
 
   .slider-track { stroke: var(--axis); stroke-width: 2; stroke-linecap: round; }
+  .slider-marker { stroke: var(--axis); stroke-width: 1.5; opacity: 0.55; }
   .slider-handle {
     fill: var(--ink);
     stroke: #ffffff;
     stroke-width: 2.5;
     cursor: grab;
+    transition: cx 150ms ease;
   }
   .slider-handle:active { cursor: grabbing; }
   .slider-cheer { stroke: #E8472A; stroke-width: 2.5; stroke-linecap: round; }
   .slider-caption { fill: var(--ink); font-size: 13.5px; font-weight: 500; }
+  .slider-year-label {
+    fill: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    transition: x 150ms ease;
+  }
 
   g.node.year-hidden {
     opacity: 0 !important;
@@ -549,6 +557,28 @@ function repositionForYear() {
 // hint on this chart.
 let sliderInteracted = false;
 
+// Discrete stops every 5 years (always including the present, which rarely
+// lands on a multiple of 5) rather than every single year — dragging used
+// to re-filter and re-run the force simulation on every year it crossed,
+// which at ~13px/year meant that work fired almost every pixel of mouse
+// movement and was what actually made the slide feel janky. Snapping to
+// fewer, marked stops cuts how often that work happens, and gives the
+// user visible landmarks (with a live label) instead of an unmarked drag.
+function sliderMarkerYears() {
+  const start = Math.ceil(xScale.domain()[0] / 5) * 5;
+  const years = [];
+  for (let y = start; y < CURRENT_YEAR; y += 5) years.push(y);
+  years.push(CURRENT_YEAR);
+  return years;
+}
+
+function nearestMarkerYear(pixelX) {
+  const rawYear = xScale.invert(pixelX);
+  return sliderMarkerYears().reduce((best, y) =>
+    Math.abs(y - rawYear) < Math.abs(best - rawYear) ? y : best
+  );
+}
+
 function drawSlider() {
   gSlider.selectAll("*").remove();
   gSlider.attr("data-year", sliderYear);
@@ -561,48 +591,65 @@ function drawSlider() {
     .attr("x1", x0).attr("x2", x1)
     .attr("y1", trackY).attr("y2", trackY);
 
+  sliderMarkerYears().forEach(y => {
+    gSlider.append("line")
+      .attr("class", "slider-marker")
+      .attr("x1", xScale(y)).attr("x2", xScale(y))
+      .attr("y1", trackY - 5).attr("y2", trackY + 5);
+  });
+
   const handleX = xScale(sliderYear);
+  const handleR = 8;
 
   if (!sliderInteracted) {
-    // The handle starts at the far-right "present" end of the track, so
-    // the hint sits to its LEFT — anchoring it to the right would push
-    // the text straight off the edge of the chart.
-    const cheerX = handleX - 46, cheerY = trackY;
-    [[-8, -14], [2, -20], [12, -14]].forEach(([dx, dy]) => {
+    // Cheer marks fan upward from the handle, biased to its right side;
+    // the caption sits below so neither one crosses the track line itself.
+    [-90, -60, -30].forEach(deg => {
+      const rad = deg * Math.PI / 180;
+      const x1t = handleX + Math.cos(rad) * (handleR + 7);
+      const y1t = trackY + Math.sin(rad) * (handleR + 7);
+      const x2t = handleX + Math.cos(rad) * (handleR + 22);
+      const y2t = trackY + Math.sin(rad) * (handleR + 22);
       gSlider.append("line")
         .attr("class", "slider-cheer")
-        .attr("x1", cheerX + dx).attr("y1", cheerY - dy)
-        .attr("x2", cheerX + dx * 1.6).attr("y2", cheerY - dy * 1.7);
+        .attr("x1", x1t).attr("y1", y1t)
+        .attr("x2", x2t).attr("y2", y2t);
     });
 
     gSlider.append("text")
       .attr("class", "slider-caption")
-      .attr("x", cheerX - 16)
-      .attr("y", cheerY + 5)
+      .attr("x", handleX)
+      .attr("y", trackY + 30)
       .attr("text-anchor", "end")
       .text("use the slider to see logos up to that year!");
   }
 
   const handle = gSlider.append("circle")
     .attr("class", "slider-handle")
-    .attr("r", 8)
+    .attr("r", handleR)
     .attr("cx", handleX)
     .attr("cy", trackY);
 
-  // The handle's on-screen position tracks the mouse continuously (that's
-  // what makes the drag feel smooth) while the underlying sliderYear only
-  // commits — and only then re-filters/re-layouts the chart — once it
-  // actually crosses into a new whole year, rather than on every pixel of
-  // movement. Redrawing the whole slider (and re-running the force
-  // simulation) on every mousemove was what made the old version feel
-  // stepped/janky instead of like a real slide.
-  function commitToPixel(clampedX) {
-    handle.attr("cx", clampedX);
-    const rawYear = xScale.invert(clampedX);
-    const domainMin = Math.ceil(xScale.domain()[0]);
-    const rounded = Math.max(domainMin, Math.min(CURRENT_YEAR, Math.round(rawYear)));
-    if (rounded === sliderYear) return;
-    sliderYear = rounded;
+  // Always-visible label tracking the handle, so whichever marker it's
+  // currently resting on is unambiguous.
+  const yearLabel = gSlider.append("text")
+    .attr("class", "slider-year-label")
+    .attr("text-anchor", "middle")
+    .attr("x", handleX)
+    .attr("y", trackY - 40)
+    .text(sliderYear);
+
+  // The handle snaps straight to the nearest marker rather than tracking
+  // the raw mouse pixel — a CSS transition on cx (see stylesheet) eases
+  // each snap into a smooth little slide instead of a hard jump, so it
+  // still feels fluid even though the stops themselves are discrete.
+  function commitToPixel(pixelX) {
+    const year = nearestMarkerYear(pixelX);
+    const targetX = xScale(year);
+    handle.attr("cx", targetX);
+    yearLabel.attr("x", targetX).text(year);
+    if (year === sliderYear) return;
+    sliderYear = year;
     gSlider.attr("data-year", sliderYear);
     applyYearFilter();
     repositionForYear();
