@@ -298,7 +298,6 @@ const CONTEXT_R = 6;
 const CONTEXT_R_DIM = 5;
 const FOCUS_R = 34; // 68px diameter
 const EXPLODE_R = 64; // logo history is the emphasis once opened
-const PRESENT_BAND_FRAC = 0.24;
 const CURRENT_YEAR = new Date().getFullYear();
 
 let activeIndustry = "restaurants";
@@ -327,7 +326,6 @@ const gSlider = svg.append("g").attr("class", "slider-layer");
 let scoreScale;
 let xScale;
 let axisStartYear = 1970; // recomputed from the earliest real data year once loaded
-let presentBandX0, presentBandX1, presentCenterX;
 let edgeDensityMean = 0, edgeDensityStd = 1;
 
 let explodedBrand = null;
@@ -377,14 +375,7 @@ function measureWidth() {
   const rect = document.getElementById("chart-wrap").getBoundingClientRect();
   width = Math.max(760, rect.width);
   svg.attr("viewBox", `0 0 ${width} ${height}`);
-
-  const plotLeft = margin.left, plotRight = width - margin.right;
   setXScale(baseXDomain());
-
-  const bandW = (plotRight - plotLeft) * PRESENT_BAND_FRAC;
-  presentBandX1 = plotRight;
-  presentBandX0 = plotRight - bandW;
-  presentCenterX = (presentBandX0 + presentBandX1) / 2;
 }
 
 function computeEdgeDensityStats(timelines) {
@@ -535,6 +526,29 @@ function applyYearFilter() {
   });
 }
 
+// Each dot's real x position on the timeline — wherever its logo as of
+// sliderYear actually falls — rather than the whole collapsed view always
+// clustering in one fixed spot regardless of what the slider is doing.
+// Nodes with no eligible version yet are hidden anyway, so their target
+// value here is never actually seen.
+function xTargetFor(d) {
+  const asOf = rowAsOfYear(d.brand, sliderYear);
+  const year = asOf ? asOf.year : CURRENT_YEAR;
+  return xScale(Math.max(xScale.domain()[0], Math.min(CURRENT_YEAR, year)));
+}
+
+function repositionForYear() {
+  if (!simulation) return;
+  simulation.force("x", d3.forceX(xTargetFor).strength(0.25));
+  simulation.alpha(0.6).restart();
+}
+
+// The hint (cheer lines + caption) only ever shows once, in the slider's
+// untouched resting position, then is gone for good the moment the user
+// actually interacts — same "dismiss on first use" pattern as the other
+// hint on this chart.
+let sliderInteracted = false;
+
 function drawSlider() {
   gSlider.selectAll("*").remove();
   gSlider.attr("data-year", sliderYear);
@@ -549,19 +563,25 @@ function drawSlider() {
 
   const handleX = xScale(sliderYear);
 
-  const cheerX = handleX - 24, cheerY = trackY + 22;
-  [[-8, -30], [4, -22], [16, -30]].forEach(([dx, dy]) => {
-    gSlider.append("line")
-      .attr("class", "slider-cheer")
-      .attr("x1", cheerX + dx).attr("y1", cheerY - dy)
-      .attr("x2", cheerX + dx * 1.6).attr("y2", cheerY - dy * 1.7);
-  });
+  if (!sliderInteracted) {
+    // The handle starts at the far-right "present" end of the track, so
+    // the hint sits to its LEFT — anchoring it to the right would push
+    // the text straight off the edge of the chart.
+    const cheerX = handleX - 46, cheerY = trackY;
+    [[-8, -14], [2, -20], [12, -14]].forEach(([dx, dy]) => {
+      gSlider.append("line")
+        .attr("class", "slider-cheer")
+        .attr("x1", cheerX + dx).attr("y1", cheerY - dy)
+        .attr("x2", cheerX + dx * 1.6).attr("y2", cheerY - dy * 1.7);
+    });
 
-  gSlider.append("text")
-    .attr("class", "slider-caption")
-    .attr("x", cheerX + 34)
-    .attr("y", cheerY + 6)
-    .text("use the slider to see logos up to that year!");
+    gSlider.append("text")
+      .attr("class", "slider-caption")
+      .attr("x", cheerX - 16)
+      .attr("y", cheerY + 5)
+      .attr("text-anchor", "end")
+      .text("use the slider to see logos up to that year!");
+  }
 
   const handle = gSlider.append("circle")
     .attr("class", "slider-handle")
@@ -569,14 +589,36 @@ function drawSlider() {
     .attr("cx", handleX)
     .attr("cy", trackY);
 
+  // The handle's on-screen position tracks the mouse continuously (that's
+  // what makes the drag feel smooth) while the underlying sliderYear only
+  // commits — and only then re-filters/re-layouts the chart — once it
+  // actually crosses into a new whole year, rather than on every pixel of
+  // movement. Redrawing the whole slider (and re-running the force
+  // simulation) on every mousemove was what made the old version feel
+  // stepped/janky instead of like a real slide.
+  function commitToPixel(clampedX) {
+    handle.attr("cx", clampedX);
+    const rawYear = xScale.invert(clampedX);
+    const domainMin = Math.ceil(xScale.domain()[0]);
+    const rounded = Math.max(domainMin, Math.min(CURRENT_YEAR, Math.round(rawYear)));
+    if (rounded === sliderYear) return;
+    sliderYear = rounded;
+    gSlider.attr("data-year", sliderYear);
+    applyYearFilter();
+    repositionForYear();
+  }
+
   handle.call(
     d3.drag()
-      .on("start", () => { sliderDragging = true; })
+      .on("start", () => {
+        sliderDragging = true;
+        if (!sliderInteracted) {
+          sliderInteracted = true;
+          gSlider.selectAll(".slider-cheer, .slider-caption").remove();
+        }
+      })
       .on("drag", (event) => {
-        const y = Math.round(xScale.invert(event.x));
-        sliderYear = Math.max(xScale.domain()[0], Math.min(CURRENT_YEAR, y));
-        drawSlider();
-        applyYearFilter();
+        commitToPixel(Math.max(x0, Math.min(x1, event.x)));
       })
       .on("end", () => { sliderDragging = false; })
   );
@@ -590,11 +632,12 @@ function drawSlider() {
     .attr("stroke-width", 20)
     .style("cursor", "pointer")
     .on("click", (event) => {
+      if (!sliderInteracted) {
+        sliderInteracted = true;
+        gSlider.selectAll(".slider-cheer, .slider-caption").remove();
+      }
       const [mx] = d3.pointer(event);
-      const y = Math.round(xScale.invert(mx));
-      sliderYear = Math.max(xScale.domain()[0], Math.min(CURRENT_YEAR, y));
-      drawSlider();
-      applyYearFilter();
+      commitToPixel(Math.max(x0, Math.min(x1, mx)));
     });
 }
 
@@ -603,12 +646,12 @@ function initSim(data) {
     ...d,
     r: CONTEXT_R,
     y: scoreScale(d.complexity_change_score),
-    x: presentCenterX + (Math.random() - 0.5) * 30,
+    x: xTargetFor(d) + (Math.random() - 0.5) * 30,
   }));
 
   simulation = d3.forceSimulation(nodes)
     .force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1))
-    .force("x", d3.forceX(() => presentCenterX).strength(0.06))
+    .force("x", d3.forceX(xTargetFor).strength(0.25))
     .force("collide", d3.forceCollide(d => d.r + 1))
     .alphaDecay(0.05)
     .velocityDecay(0.5)
@@ -619,7 +662,7 @@ function initSim(data) {
 }
 
 function clampNode(d) {
-  d.x = Math.max(presentBandX0 + d.r + 6, Math.min(presentBandX1 - d.r - 6, d.x));
+  d.x = Math.max(margin.left + d.r + 6, Math.min(width - margin.right - d.r - 6, d.x));
   d.y = Math.max(margin.top + d.r, Math.min(height - margin.bottom - d.r, d.y));
 }
 
@@ -654,10 +697,10 @@ function updateLogoHint() {
       .attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
   });
 
-  // The present-day cluster is crowded on its own, so route the label out to
-  // the open space to its left rather than trying to fit it beside the
-  // circle within the cluster (where it used to overlap neighboring dots).
-  const tx = Math.min(cx - r - 14, presentBandX0 - 12);
+  // Route the label to the open space just left of the circle, clamped so
+  // it never gets pushed past the left edge of the plot for a dot sitting
+  // early on the timeline.
+  const tx = Math.max(margin.left + 4, cx - r - 14);
   const text = gHint.append("text")
     .attr("class", "hint-text")
     .attr("x", tx)
@@ -1091,7 +1134,7 @@ Promise.all([
     drawAxis();
     drawSlider();
     simulation.force("y", d3.forceY(d => scoreScale(d.complexity_change_score)).strength(1));
-    simulation.force("x", d3.forceX(() => presentCenterX).strength(0.06));
+    simulation.force("x", d3.forceX(xTargetFor).strength(0.25));
     simulation.alpha(0.6).restart();
   });
 }).catch(err => {
