@@ -153,6 +153,30 @@
     color: #1c1c1a;
   }
 
+  @media (max-width: 640px) {
+    .polaroid-outer {
+      padding: 0 16px;
+      gap: 10px;
+    }
+
+    .polaroid-camera {
+      display: none;
+    }
+
+    .polaroid-nav {
+      width: 40px;
+      height: 40px;
+    }
+
+    .polaroid {
+      width: clamp(170px, 62vw, 240px);
+    }
+
+    .polaroid img {
+      height: clamp(120px, 45vw, 180px);
+    }
+  }
+
   .logo-grid {
     display: flex;
     flex-wrap: wrap;
