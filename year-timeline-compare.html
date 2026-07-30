@@ -7,15 +7,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <style>
   :root {
-    --page-bg: #f5f5f4;
+    --page-bg: #ffffff;
     --card-bg: #ffffff;
     --ink: #1c1c1a;
     --ink-muted: #6b6b67;
     --ink-faint: #9a9a95;
     --border: #e2e2dd;
     --logo-card-bg: #fbfbf9;
-    --placeholder-bg: #c6faf6;
-    --placeholder-ink: #12403c;
   }
 
   * { box-sizing: border-box; }
@@ -122,7 +120,9 @@
   }
 
   .decade-card {
-    background: var(--card-bg);
+    background-color: var(--card-bg);
+    background-image: radial-gradient(circle, #d8d8d3 1px, transparent 1.5px);
+    background-size: 18px 18px;
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 6px 48px 24px;
@@ -152,29 +152,10 @@
     margin-top: 2px;
   }
 
-  .decade-range,
   .decade-count {
     font-size: 14px;
     color: var(--ink-muted);
-  }
-
-  .decade-count { font-weight: 600; }
-
-  .decade-bar {
-    margin-top: 10px;
-    width: 320px;
-    max-width: 100%;
-    height: 8px;
-    border-radius: 4px;
-    background: var(--logo-card-bg);
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-
-  .decade-bar-fill {
-    height: 100%;
-    background: var(--placeholder-ink);
-    border-radius: 4px;
+    font-weight: 600;
   }
 
   .year-heading {
@@ -213,10 +194,9 @@
       max-height: none;
     }
     /* Without an explicit cap, a column-direction flex item sizes to fit
-       its widest descendant (e.g. the fixed-width decade progress bar)
-       instead of clipping to the viewport, dragging the whole page into
-       horizontal overflow — same underlying issue fixed earlier in
-       color-wheel.html's #chart-wrap. */
+       its widest descendant instead of clipping to the viewport, dragging
+       the whole page into horizontal overflow — same underlying issue
+       fixed earlier in color-wheel.html's #chart-wrap. */
     #timeline-col, .decade-card { width: 100%; max-width: 100%; }
   }
 
@@ -304,29 +284,6 @@
     text-align: center;
   }
 
-  .history-card {
-    width: calc((100% - 32px) / 3);
-    min-height: 230px;
-    margin: 0 0 20px;
-    background: var(--placeholder-bg);
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    color: var(--placeholder-ink);
-    font-size: 15px;
-    font-weight: 600;
-    text-align: center;
-  }
-
-  @media (max-width: 900px) {
-    .history-card { width: calc((100% - 16px) / 2); }
-  }
-
-  @media (max-width: 560px) {
-    .history-card { width: 100%; }
-  }
 </style>
 </head>
 <body>
@@ -338,13 +295,6 @@
 <script>
 const START_YEAR = 1970;
 const END_YEAR = 2026;
-
-// A "History" placeholder is scattered in every five years (1970, 1975,
-// 1980, ...) rather than every single year — enough to break up the grid
-// without a placeholder box competing for attention in every section.
-function hasHistoryPlaceholder(year) {
-  return (year - START_YEAR) % 5 === 0;
-}
 
 function initials(name) {
   const words = name.replace(/[^A-Za-z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean);
@@ -438,13 +388,6 @@ function buildSingleCard(row) {
   return card;
 }
 
-function buildHistoryCard() {
-  const card = document.createElement("div");
-  card.className = "history-card";
-  card.textContent = "History";
-  return card;
-}
-
 function decadeStart(year) {
   return Math.floor(year / 10) * 10;
 }
@@ -481,7 +424,6 @@ d3.csv("data/timelines.csv", d3.autoType).then(rows => {
     for (let y = ds; y < ds + 10 && y <= END_YEAR; y++) count += (byYear.get(y) || []).length;
     return count;
   });
-  const maxDecadeCount = Math.max(...decadeCounts);
 
   const timelineCol = document.getElementById("timeline-col");
   const nav = document.getElementById("year-nav");
@@ -508,17 +450,8 @@ d3.csv("data/timelines.csv", d3.autoType).then(rows => {
     const meta = document.createElement("div");
     meta.className = "decade-meta";
     meta.innerHTML =
-      `<span class="decade-range">${ds}–${decadeEnd}</span>` +
       `<span class="decade-count">${count} logo change${count === 1 ? "" : "s"}</span>`;
     decadeHeading.appendChild(meta);
-
-    const bar = document.createElement("div");
-    bar.className = "decade-bar";
-    const barFill = document.createElement("div");
-    barFill.className = "decade-bar-fill";
-    barFill.style.width = `${(count / maxDecadeCount) * 100}%`;
-    bar.appendChild(barFill);
-    decadeHeading.appendChild(bar);
 
     decadeCard.appendChild(decadeHeading);
 
@@ -544,10 +477,6 @@ d3.csv("data/timelines.csv", d3.autoType).then(rows => {
         grid.appendChild(prev ? buildCompareCard(r, prev) : buildSingleCard(r));
       });
       yearSection.appendChild(grid);
-
-      if (hasHistoryPlaceholder(year)) {
-        yearSection.appendChild(buildHistoryCard());
-      }
 
       decadeBody.appendChild(yearSection);
     }
